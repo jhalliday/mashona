@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @WithBytemanFrom(source = ExecutionTracer.class)
 public class MappedFileChannelTests {
 
-    private static File file = new File("/mnt/pmem/tx/test");
+    private static File file = new File(System.getenv("PMEM_TEST_DIR"), "test");
 
     private MappedFileChannel mappedFileChannel;
 

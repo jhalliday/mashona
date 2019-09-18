@@ -49,7 +49,7 @@ public class PmemUtilTests {
     @Test
     public void testSucceedOnPmem() throws Exception {
 
-        File testDir = new File("/mnt/pmem/tx");
+        File testDir = new File(System.getenv("PMEM_TEST_DIR"), "tx");
         testDir.mkdir();
         File testFile = new File(testDir, "test");
 
@@ -64,7 +64,7 @@ public class PmemUtilTests {
     @Test
     public void testNoCreation() throws Exception {
 
-        File testDir = new File("/mnt/pmem/tx");
+        File testDir = new File(System.getenv("PMEM_TEST_DIR"));
         testDir.mkdir();
         File testFile = new File(testDir, "test");
 

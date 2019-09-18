@@ -32,10 +32,12 @@
         <byteman.version>4.0.8-SNAPSHOT</byteman.version>
         <jmh.version>1.21</jmh.version>
 
-        <!-- for now you need a custom build of the pre-release jdk14 with pmem patches.
-            When http://openjdk.java.net/jeps/352 is merged you'll just need jdk14
-            Note: must be an image build not an exploded, or surefire won't find JAVA_VERSION in release file -->
+        <!-- You need a jdk14 build recent enough to have the pmem patches (~September 2019)
+            Note: if compiling jdk youself, must be an image build not an exploded, or surefire won't find JAVA_VERSION in release file -->
         <jdk.dir>/home/jhalli/IdeaProjects/openjdk/14/jdk-jdk/build/linux-x86_64-server-release/images/jdk</jdk.dir>
+
+        <!-- for running tests, change to point to a directory that is on a pmem DAX mountpoint -->
+        <pmem.test.dir>/mnt/pmem/tx</pmem.test.dir>
     </properties>
 
     <build>
@@ -154,6 +156,7 @@
                     <!-- ensure we don't inherit annotationClass byteman jar form any env settings -->
                     <environmentVariables>
                         <BYTEMAN_HOME></BYTEMAN_HOME>
+                        <PMEM_TEST_DIR>${pmem.test.dir}</PMEM_TEST_DIR>
                     </environmentVariables>
                     <systemProperties>
                         <property>

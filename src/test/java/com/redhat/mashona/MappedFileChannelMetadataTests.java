@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MappedFileChannelMetadataTests {
 
-    private static File file = new File("/mnt/pmem/tx/testmeta");
+    private static File file = new File(System.getenv("PMEM_TEST_DIR"), "testmeta");
 
     private MappedFileChannelMetadata mappedFileChannelMetadata;
 

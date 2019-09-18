@@ -45,7 +45,7 @@ public class PersistenceHandleTests {
         }
     }
 
-    private static File file = new File("/mnt/pmem/tx/test");
+    private static File file = new File(System.getenv("PMEM_TEST_DIR"), "test");
 
     private FileChannel fileChannel;
     private MappedByteBuffer mappedByteBuffer;
