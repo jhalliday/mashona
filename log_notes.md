@@ -11,7 +11,7 @@ a detail which log implementations should mask from their users.
 So, how to wrap an unreliable MappedByteBuffer in a reliable log-like interface?
 
 ## AppendOnlyLog
-The AppendOnlyLog class provides a log abstraction suitable for green-field application implementations that will run only on pmem.
+The AppendOnlyLog interface provides a log abstraction suitable for green-field application implementations that will run only on pmem.
 It aims to provide an elegant, minimal API that allows for an efficient implementation.
 
 Abstractly, the conceptual design is a list of records (ByteBuffers), which can be appended to, iterated over, or deleted.
@@ -67,7 +67,7 @@ The FileChannel API allows for indexed access, i.e. reads or writes at a given o
 In order to accomodate this requirement on pmem, two different implementations are possible.
 
 Firstly, to place required metadata in-band in the backing file, with appropriate offset adjustment applied to the
-user-visible (API level) index values to translate to internal index values in such a way as to mask the maetadata from the user.
+user-visible (API level) index values to translate to internal index values in such a way as to mask the metadata from the user.
 This scheme is somewhat complex, but is rejected largely for another reason: it makes the internal structure of the
 backing file differ compared to that of the same file written by the same application code via the regular FileChannel.
 This presents substantial operational challenges, for example when migrating or replicating logs in either direction between
@@ -103,6 +103,8 @@ The initial use cases cases for this library's log abstraction are to support pm
 These codebases must continue to support conventional storage devices for the foreseeable future, as widespread adoption
 of pmem hardware will take some time. Further, they must continue to support older JDK releases that lack pmem support.
 Therefore, MappedFileChannel is preferred to AppendOnlyLog.
+
+This is the situation faced by pretty much all existing Java databases, messaging engines, etc (h2, derby, neo4j, cassandra, kafka, ...), but here we go into depth on just two from the Red Hat portfolio
 
 ### Apache ActiveMQ Artemis
 
@@ -171,7 +173,7 @@ the soft-index file store, sifs.  Sifs uses FileChannel internally in a log arra
 Artemis and therefore has many of the same integration issues. In addition to those, it introduces a further complication.
 
 Since FileChannel is stateful, having an internal mutable position value that determines the offset for reads and writes,
-it's unsafe for multi-threaded use without locking. To address this, Infinispan open multiple FileChannel instances over
+it's unsafe for multi-threaded use without locking. To address this, Infinispan opens multiple FileChannel instances over
 the same backing file.
 
 This problem first manifests at file creation, as a race condition exists in the initialization code.
