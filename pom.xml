@@ -29,7 +29,7 @@
         <maven.compiler.target>14</maven.compiler.target>
 
         <junit.version>5.4.0</junit.version>
-        <byteman.version>4.0.8-SNAPSHOT</byteman.version>
+        <byteman.version>4.0.8</byteman.version>
         <jmh.version>1.21</jmh.version>
 
         <!-- You need a jdk14 build recent enough to have the pmem patches (~September 2019)
