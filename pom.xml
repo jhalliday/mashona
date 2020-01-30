@@ -29,15 +29,16 @@
         <maven.compiler.target>14</maven.compiler.target>
 
         <junit.version>5.4.0</junit.version>
-        <byteman.version>4.0.8</byteman.version>
+        <byteman.version>4.0.10</byteman.version>
         <jmh.version>1.21</jmh.version>
 
         <!-- You need a jdk14 build recent enough to have the pmem patches (~September 2019)
-            Note: if compiling jdk youself, must be an image build not an exploded, or surefire won't find JAVA_VERSION in release file -->
-        <jdk.dir>/home/jhalli/IdeaProjects/openjdk/14/jdk-jdk/build/linux-x86_64-server-release/images/jdk</jdk.dir>
+                If using a build pre ~December 2019, see also ExecutionTracer mbbConstructor injection point.
+            Note: if compiling jdk yourself, must be an image build not an exploded, or surefire won't find JAVA_VERSION in release file -->
+        <jdk.dir>/home/jhalli/IdeaProjects/openjdk/14/jdk-jdk14/build/linux-x86_64-server-release/images/jdk</jdk.dir>
 
         <!-- for running tests, change to point to a directory that is on a pmem DAX mountpoint -->
-        <pmem.test.dir>/mnt/pmem/tx</pmem.test.dir>
+        <pmem.test.dir>/mnt/pmem/test</pmem.test.dir>
     </properties>
 
     <build>

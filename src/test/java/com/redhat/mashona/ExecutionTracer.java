@@ -227,8 +227,9 @@ public class ExecutionTracer {
         markDirty(address);
     }
 
+    // caution: updated for jdk.internal.access.foreign.MemorySegmentProxy API change. Won't work on older JDK14 builds, causing tests to break in weird ways.
     @BMRule(name = "trace_mbbConstructor_0",
-            targetClass = "DirectByteBuffer", targetMethod = "<init>(int,long,FileDescriptor,Runnable,boolean)", targetLocation = "ENTRY",
+            targetClass = "DirectByteBuffer", targetMethod = "<init>(int,long,FileDescriptor,Runnable,boolean,MemorySegmentProxy)", targetLocation = "ENTRY",
             condition = "com.redhat.mashona.ExecutionTracer.INSTANCE != null",
             action = "com.redhat.mashona.ExecutionTracer.INSTANCE.mbbConstructor($1, $2, $3, $4, $5);")
     public void mbbConstructor(int cap, long address, FileDescriptor fd, Runnable unmapper, boolean isSync) {
