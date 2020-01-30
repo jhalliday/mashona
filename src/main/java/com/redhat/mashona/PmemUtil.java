@@ -62,16 +62,17 @@ public class PmemUtil {
     /**
      * Validate if it's possible to use pmem via a DAX mmap for the given path.
      *
-     * Note that pmemChannelFor implicitly makes this check, so direct calls are not normally required.
+     * <p>Note that pmemChannelFor implicitly makes this check, so direct calls are not normally required.</p>
      *
-     * This method checks that
+     * <p>This method checks that
      *   a) the JVM is recent enough to have pmem support
      *   b) the directory is on a DAX mode file system mount
+     * </p>
      *
-     * Unfortunately due to API limitations the only way perform the latter check to to try a mmap and see if it fails.
+     * <p>Unfortunately due to API limitations the only way perform the latter check to to try a mmap and see if it fails.
      * There is a nasty side effect of that - the file is expanded to the desired mmap size BEFORE the mmap is done,
      * so if the map fails it needs to be shrunk back. BUT it can't be reliably locked during that window, which can
-     * cause race conditions. Therefore we perform the check using a temporary file in the same directory instead.
+     * cause race conditions. Therefore we perform the check using a temporary file in the same directory instead.</p>
      *
      * @param dir The directory to validate. A temporary file will be created in this directory.
      * @return true if pmem is available at the given location, false otherwise

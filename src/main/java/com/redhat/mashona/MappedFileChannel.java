@@ -75,11 +75,10 @@ public class MappedFileChannel extends FileChannel {
     private final MappedFileChannelMetadata metadata;
 
     /**
-     * Initializes a new MappedFileChannel over the provided FileChannel, with a fixed length.
-     * The data capacity will be less than the given length, due to metadata overhead.
+     * Initializes a new MappedFileChannel over the provided File, with a fixed length.
      *
      * @param file The file over which to map.
-     * @param length The required raw capacity, including metadata space.
+     * @param length The required raw capacity.
      *
      * @throws IOException if the mapping cannot be created, such as when the File is on a filesystem that does not support DAX.
      */
@@ -191,7 +190,7 @@ public class MappedFileChannel extends FileChannel {
      *
      * @return  The number of bytes read, possibly zero, or {@code -1} if the
      *          given position is greater than or equal to the file's current
-     *          size
+     *          persisted size
      */
     @Override
     public int read(ByteBuffer dst, long position) throws IOException {
@@ -356,12 +355,11 @@ public class MappedFileChannel extends FileChannel {
      * Sets this channel's file position.
      *
      * <p> Setting the position to a value that is greater than the file's
-     * current size is legal but does not change the size of the file.  A later
+     * current persisted size is legal but does not change the size of the file.  A later
      * attempt to read bytes at such a position will immediately return an
      * end-of-file indication.  A later attempt to write bytes at such a
-     * position will cause the file to be grown to accommodate the new bytes;
-     * the values of any bytes between the previous end-of-file and the
-     * newly-written bytes are unspecified.  </p>
+     * position will cause the values of any bytes between the previous end-of-file
+     * and the newly-written bytes to be unspecified.</p>
      *
      * @param newPosition The new position.
      *
@@ -388,11 +386,11 @@ public class MappedFileChannel extends FileChannel {
     }
 
     /**
-     * Returns the current size of this channel's file.
-     * This reports the effective data capacity, which is smaller than the raw size on disk due to the metadata overhead.
-     * TODO fix me docs
+     * Returns the current size of this channel's mapped area, as provided to the constructor.
      *
-     * @return  The current size of this channel's file, measured in bytes.
+     * <p>Note: This may differ from the size on disk or the readable size.</p>
+     *
+     * @return The current size of this channel's mapped area, measured in bytes.
      */
     @Override
     public long size() throws IOException {

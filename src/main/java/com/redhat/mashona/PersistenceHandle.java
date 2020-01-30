@@ -45,7 +45,7 @@ public class PersistenceHandle {
     /**
      * Configure validation of buffers passed to the constructor.
      *
-     * Caution: this method is NOT threadsafe with respect to instance constructor calls.
+     * <p>Caution: this method is NOT threadsafe with respect to instance constructor calls.</p>
      *
      * @param value true to enable validation, false to disable.
      * @throws Exception if configuration enablement fails.
@@ -71,8 +71,8 @@ public class PersistenceHandle {
     /**
      * Initializes a new PersistenceHandle for the specified region of the provided buffer.
      *
-     * Note that the MappedByteBuffer MUST be the original instance obtained
-     * from fileChannel.map and NOT a duplicate or slice thereof.
+     * <p>Note that the MappedByteBuffer MUST be the original instance obtained
+     * from fileChannel.map and NOT a duplicate or slice thereof.</p>
      *
      * @param buffer The MappedByteBuffer over which to operate.
      * @param offset the offset in the buffer at which to base our operational area.
