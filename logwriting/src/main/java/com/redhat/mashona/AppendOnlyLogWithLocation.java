@@ -131,5 +131,14 @@ public interface AppendOnlyLogWithLocation extends AppendOnlyLog {
      */
     int tryPutWithLocation(ByteBuffer src);
 
+    /**
+     * Read a log entry starting from a specific location.
+     *
+     * This method allows for unordered access rather than linear iteration.
+     * Typically used with arguments (locations) previously obtained via putWithLocation methods.
+     *
+     * @param location The starting location of the data within the log. Must correspond to the stating location of a valid record.
+     * @return A ByteBuffer containg the record present at the specified location.
+     */
     ByteBuffer readRecordAt(int location);
 }

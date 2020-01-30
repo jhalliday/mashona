@@ -528,7 +528,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
         logger.exit();
     }
 
-    // TODO docs and tests
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ByteBuffer readRecordAt(int location) {
 

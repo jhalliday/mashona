@@ -108,8 +108,8 @@ public class PersistenceHandle {
         }
     }
 
-    // TODO non-public
-    public PersistenceHandle duplicate(int offset, int length) {
+    // mostly for testing.
+    PersistenceHandle duplicate(int offset, int length) {
         logger.entry(offset, length);
 
         if (length > this.length) {
@@ -148,10 +148,5 @@ public class PersistenceHandle {
         persist(0, length);
 
         logger.exit();
-    }
-
-    // TODO non-public
-    public int getOffset() {
-        return offset;
     }
 }
