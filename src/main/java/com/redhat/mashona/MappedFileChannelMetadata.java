@@ -186,7 +186,11 @@ public class MappedFileChannelMetadata implements Closeable {
             buffer.position(0);
             buffer.put(zeros);
             persistenceHandle.persist(0, FILE_SIZE);
-            buffer.put(0, MAGIC_HEADER);
+
+            buffer.position(0);
+            buffer.put(MAGIC_HEADER);
+            // JDK-14: buffer.put(0, MAGIC_HEADER);
+
             persistenceHandle.persist(0, MAGIC_HEADER.length);
             buffer.position(0);
         } finally {
