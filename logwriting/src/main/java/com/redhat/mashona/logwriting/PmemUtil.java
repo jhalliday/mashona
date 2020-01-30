@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona;
+package com.redhat.mashona.logwriting;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -44,8 +44,8 @@ public class PmemUtil {
         try {
             String specVersion = System.getProperty("java.specification.version");
             if(!specVersion.contains(".") && Integer.parseInt(specVersion) >= 14) {
-                fccTmp = Class.forName("com.redhat.mashona.MappedFileChannel").getDeclaredConstructor(File.class, int.class);
-                fccmdTmp = Class.forName("com.redhat.mashona.MappedFileChannelMetadata").getDeclaredConstructor(File.class);
+                fccTmp = Class.forName("com.redhat.mashona.logwriting.MappedFileChannel").getDeclaredConstructor(File.class, int.class);
+                fccmdTmp = Class.forName("com.redhat.mashona.logwriting.MappedFileChannelMetadata").getDeclaredConstructor(File.class);
             }
         } catch (Exception e) {
             logger.debug("Can't wire MappedFileChannel constructor", e);

@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona;
+package com.redhat.mashona.logwriting;
 
 import jdk.nio.mapmode.ExtendedMapMode;
 import org.junit.jupiter.api.AfterEach;

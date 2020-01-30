@@ -43,7 +43,7 @@
 
     <logger name="com.redhat.mashona" level="OFF"/>
 
-    <logger name="com.redhat.mashona.ExecutionTracer" level="INFO"/>
+    <logger name="com.redhat.mashona.logwriting.ExecutionTracer" level="INFO"/>
 
 </configuration>
 
