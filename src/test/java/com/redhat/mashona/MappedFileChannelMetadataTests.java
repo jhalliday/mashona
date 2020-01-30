@@ -89,4 +89,22 @@ public class MappedFileChannelMetadataTests {
         assertThrows(ClosedChannelException.class, () -> mappedFileChannelMetadata.clear());
         assertThrows(ClosedChannelException.class, () -> mappedFileChannelMetadata.getPersistenceIndex());
     }
+
+    @Test
+    public void testReadSharing() throws IOException {
+
+        mappedFileChannelMetadata = new MappedFileChannelMetadata(file);
+        assertEquals(0, mappedFileChannelMetadata.getPersistenceIndex());
+        MappedFileChannelMetadata readSlave = new MappedFileChannelMetadata(file, true);
+        assertEquals(0, readSlave.getPersistenceIndex());
+
+        mappedFileChannelMetadata.persist(0, 10);
+        assertEquals(10, mappedFileChannelMetadata.getPersistenceIndex());
+        assertEquals(10, readSlave.getPersistenceIndex());
+
+        readSlave.persist(10, 10);
+        assertEquals(10, mappedFileChannelMetadata.getPersistenceIndex());
+        assertEquals(20, readSlave.getPersistenceIndex());
+    }
+
 }

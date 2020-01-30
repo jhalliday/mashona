@@ -66,8 +66,10 @@ public class MappedFileChannelMetadata implements Closeable {
     private final FileChannel fileChannel;
     private final ByteBuffer buffer;
     private final PersistenceHandle persistenceHandle;
+    private final boolean readShared;
 
     private int persistenceIndex;
+
 
     /**
      * Initialize a new MappedFileChannelMetadata over the given file.
@@ -76,6 +78,17 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws IOException if the mapping fails.
      */
     public MappedFileChannelMetadata(File file) throws IOException {
+        this(file, false);
+    }
+
+    /**
+     * Initialize a new MappedFileChannelMetadata over the given file.
+     *
+     * @param file The underlying File to use. Must be on DAX aware storage.
+     * @param readShared true if the underlying persistent state may be updated by other processes, false otherwise.
+     * @throws IOException if the mapping fails.
+     */
+    public MappedFileChannelMetadata(File file, boolean readShared) throws IOException {
 
         fileChannel = (FileChannel) Files
                 .newByteChannel(file.toPath(), EnumSet.of(
@@ -86,6 +99,8 @@ public class MappedFileChannelMetadata implements Closeable {
         MappedByteBuffer tmpRawBuffer = fileChannel.map(ExtendedMapMode.READ_WRITE_SYNC, 0, FILE_SIZE);
 
         persistenceHandle = new PersistenceHandle(tmpRawBuffer, 0, FILE_SIZE);
+
+        this.readShared = readShared;
 
         buffer = tmpRawBuffer;
 
@@ -137,6 +152,7 @@ public class MappedFileChannelMetadata implements Closeable {
         lock.lock();
         try {
             validateIsOpen();
+            refreshPersistenceIndex();
             value = persistenceIndex;
         } finally {
             lock.unlock();
@@ -160,6 +176,7 @@ public class MappedFileChannelMetadata implements Closeable {
 
         try {
             validateIsOpen();
+            refreshPersistenceIndex();
             persistenceIndex = startIndex + length;
             buffer.putInt(MAGIC_HEADER.length, persistenceIndex);
             persistenceHandle.persist(MAGIC_HEADER.length, 4);
@@ -205,4 +222,11 @@ public class MappedFileChannelMetadata implements Closeable {
             throw new ClosedChannelException();
         }
     }
+
+    private void refreshPersistenceIndex() {
+        if (readShared) {
+            persistenceIndex = buffer.getInt(MAGIC_HEADER.length);
+        }
+    }
+
 }
