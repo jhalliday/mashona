@@ -108,6 +108,7 @@ public class MappedFileChannel extends FileChannel {
         dataBuffer = tmp.slice();
 
         metadata = new MappedFileChannelMetadata( getMetadataFile(file) );
+        // for clean recovery, scrub any incompletely persisted trailing data:
         clearDataFromOffset( metadata.getPersistenceIndex() ); // TODO make less dangerous. in general, deal with concurrent instances
         dataBuffer.position(0);
 
@@ -403,6 +404,53 @@ public class MappedFileChannel extends FileChannel {
             validateIsOpen();
 
             result = dataBuffer.limit();
+        } finally {
+            lock.unlock();
+        }
+
+        logger.exit(result);
+        return result;
+    }
+
+    /**
+     * Returns the size of the channel's file on disk.
+     *
+     * <p>Note: This may be more than the mapped area - use .size() instead for that.</p>
+     * <p></p>Note: This may be more than the readable size, as non persisted trailing data is inacessible.</p>
+     *
+     * @return The size of the channel's file on disk, measured in bytes.
+     * @see #size()
+     * @see #getPersistedSize()
+     */
+    public long getFileSize() {
+        logger.entry();
+
+        long result = file.length();
+
+        logger.exit(result);
+
+        return result;
+    }
+
+    /**
+     * Returns the size of the persisted data within the channel.
+     *
+     * <p>Note: this may be less than the mapped area (i.e. capacity) of the channel.</p>
+     * <p>Note: this may be less than the file size on disk.</p>
+     *
+     * @return The size of the currently persisted data, measured in bytes.
+     * @throws ClosedChannelException if the channel is not open.
+     * @see #size()
+     * @see #getFileSize()
+     */
+    public long getPersistedSize() throws ClosedChannelException {
+        logger.entry();
+
+        lock.lock();
+        long result = 0;
+
+        try {
+            result = metadata.getPersistenceIndex();
         } finally {
             lock.unlock();
         }

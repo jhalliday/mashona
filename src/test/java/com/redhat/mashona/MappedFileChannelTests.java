@@ -227,4 +227,33 @@ public class MappedFileChannelTests {
         assertThrows(IOException.class, () -> mappedFileChannel.lock(0, 0, false));
         assertThrows(IOException.class, () -> mappedFileChannel.tryLock(0, 0, false));
     }
+
+    @Test
+    public void testOverwriteFails() throws IOException {
+        assertEquals(1, mappedFileChannel.write(ByteBuffer.wrap(new byte[]{(byte) 1})));
+        mappedFileChannel.position(0);
+        assertThrows(IllegalArgumentException.class, () -> mappedFileChannel.write(ByteBuffer.wrap(new byte[]{(byte) 2})));
+        assertEquals(0, mappedFileChannel.position());
+    }
+
+    @Test
+    public void testUnwrittenFails() throws IOException {
+        ByteBuffer data = ByteBuffer.allocate(1);
+        assertEquals(-1, mappedFileChannel.read(data));
+        assertEquals(-1, mappedFileChannel.read(data, 0));
+    }
+
+    @Test
+    public void testSizes() throws IOException {
+        assertEquals(1024, mappedFileChannel.size());
+        assertEquals(1024, mappedFileChannel.getFileSize());
+        assertEquals(0, mappedFileChannel.getPersistedSize());
+
+        assertEquals(1, mappedFileChannel.write(ByteBuffer.wrap(new byte[]{(byte) 1})));
+
+        assertEquals(1024, mappedFileChannel.size());
+        assertEquals(1024, mappedFileChannel.getFileSize());
+        assertEquals(1, mappedFileChannel.getPersistedSize());
+    }
+
 }
