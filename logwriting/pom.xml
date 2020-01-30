@@ -18,10 +18,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.redhat.mashona</groupId>
-    <artifactId>mashona</artifactId>
+    <artifactId>logwriting</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 
-    <name>Mashona</name>
+    <name>Mashona Log Writing</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -38,7 +38,7 @@ e.g. the log, heap and transaction elements from libpmemobj (and llpl/pcj via JN
 
 The log is the first abstraction we add in Java, since it's the most useful for our immediate use cases. Other parts may follow.
 
-Details of the log design and notes on its usage can be found in [log_notes.md](./log_notes.md)
+Details of the log design and notes on its usage can be found in [log_notes.md](logwriting/README.md)
 
 ## Try it out
 

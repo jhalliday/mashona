@@ -1,3 +1,7 @@
+# Mashona logwriting module Notes.
+
+For top-level overview, read ../README.md first
+
 # Append-Only Log notes
 The binary append-only log is a key data structure for many use cases, including databases and message queues.
 This document covers some of the design decisions applicable to mashona's implementation(s) and highlights key points where caution is necessary for users.
