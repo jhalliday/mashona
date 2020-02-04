@@ -254,6 +254,18 @@ public class MappedFileChannelTests {
         assertEquals(1024, mappedFileChannel.size());
         assertEquals(1024, mappedFileChannel.getFileSize());
         assertEquals(1, mappedFileChannel.getPersistedSize());
+
+        mappedFileChannel.close();
+
+        assertThrows(ClosedChannelException.class, () -> mappedFileChannel.size());
+        assertThrows(ClosedChannelException.class, () -> mappedFileChannel.getPersistedSize());
+        assertEquals(1, mappedFileChannel.getFileSize());
+
+        mappedFileChannel = new MappedFileChannel(file, 1024);
+
+        assertEquals(1024, mappedFileChannel.size());
+        assertEquals(1024, mappedFileChannel.getFileSize());
+        assertEquals(1, mappedFileChannel.getPersistedSize());
     }
 
 }

@@ -450,6 +450,8 @@ public class MappedFileChannel extends FileChannel {
         long result = 0;
 
         try {
+            validateIsOpen();
+
             result = metadata.getPersistenceIndex();
         } finally {
             lock.unlock();
@@ -522,7 +524,7 @@ public class MappedFileChannel extends FileChannel {
             // https://bugs.openjdk.java.net/browse/JDK-4724038
             unsafe.invokeCleaner(rawBuffer);
 
-            fileChannel.truncate(metadata.getPersistenceIndex()); // TODO test me
+            fileChannel.truncate(metadata.getPersistenceIndex());
 
             // TODO close metadata (assuming it's private instance)
 
