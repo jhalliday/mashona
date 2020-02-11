@@ -89,6 +89,7 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws IOException if the mapping fails.
      */
     public MappedFileChannelMetadata(File file, boolean readShared) throws IOException {
+        logger.entry(file, readShared);
 
         fileChannel = (FileChannel) Files
                 .newByteChannel(file.toPath(), EnumSet.of(
@@ -114,6 +115,8 @@ public class MappedFileChannelMetadata implements Closeable {
             // we don't know what's in the provided buffer, so zero it out for safety
             clear();
         }
+
+        logger.exit(this);
     }
 
     /**
@@ -123,7 +126,7 @@ public class MappedFileChannelMetadata implements Closeable {
      */
     @Override
     public void close() throws IOException {
-        logger.entry();
+        logger.entry(this);
 
         lock.lock();
 
@@ -146,7 +149,7 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws ClosedChannelException if the instance has previously been closed.
      */
     public int getPersistenceIndex() throws ClosedChannelException {
-        logger.entry();
+        logger.entry(this);
 
         int value;
         lock.lock();
@@ -170,7 +173,7 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws ClosedChannelException if the instance has previously been closed.
      */
     public void persist(int startIndex, int length) throws ClosedChannelException {
-        logger.entry(startIndex, length);
+        logger.entry(this, startIndex, length);
 
         lock.lock();
 
@@ -193,7 +196,7 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws ClosedChannelException if the instance has previously been closed.
      */
     public void clear() throws ClosedChannelException {
-        logger.entry();
+        logger.entry(this);
 
         lock.lock();
 

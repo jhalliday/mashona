@@ -87,7 +87,7 @@ public class PersistenceHandle {
         this.offset = offset;
         this.length = length;
 
-        logger.exit();
+        logger.exit(this);
     }
 
     private void validateBuffer(MappedByteBuffer buff) {
@@ -128,7 +128,7 @@ public class PersistenceHandle {
      * @param length the number of bytes.
      */
     public void persist(int from, int length) {
-        logger.entry(from, length);
+        logger.entry(this, from, length);
 
         if (length > this.length) {
             throw new IllegalArgumentException("given length of " + length + " exceeds max of " + this.length);
@@ -143,7 +143,7 @@ public class PersistenceHandle {
      * Forces any changes made to be written to the persistence domain.
      */
     public void persist() {
-        logger.entry();
+        logger.entry(this);
 
         persist(0, length);
 

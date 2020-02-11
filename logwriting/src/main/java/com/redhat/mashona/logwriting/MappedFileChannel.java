@@ -60,7 +60,7 @@ public class MappedFileChannel extends FileChannel {
      * @throws IOException if the given file is invalid.
      */
     public static File getMetadataFile(File file) throws IOException {
-        return new File(file.getCanonicalPath()+".pmem");
+        return new File(file.getCanonicalPath() + ".pmem");
     }
 
     private final PersistenceHandle persistenceHandle;
@@ -77,15 +77,20 @@ public class MappedFileChannel extends FileChannel {
     /**
      * Initializes a new MappedFileChannel over the provided File, with a fixed length.
      *
-     * @param file The file over which to map.
-     * @param length The required raw capacity.
-     *
+     * @param file               The file over which to map.
+     * @param length             The required raw capacity.
+     * @param readSharedMetadata The sharing mode for the persistence metadata.
      * @throws IOException if the mapping cannot be created, such as when the File is on a filesystem that does not support DAX.
      */
-    public MappedFileChannel(File file, int length) throws IOException {
-        logger.entry(file, length);
+    public MappedFileChannel(File file, int length, boolean readSharedMetadata) throws IOException {
+        logger.entry(this, file, length, readSharedMetadata);
 
         this.file = file;
+
+        if (!file.exists() && getMetadataFile(file).exists()) {
+            logger.trace("deleting orphan metadata for " + file.getAbsolutePath());
+            getMetadataFile(file).delete();
+        }
 
         this.fileChannel = (FileChannel) Files
                 .newByteChannel(file.toPath(), EnumSet.of(
@@ -107,12 +112,21 @@ public class MappedFileChannel extends FileChannel {
         tmp.limit(length);
         dataBuffer = tmp.slice();
 
-        metadata = new MappedFileChannelMetadata( getMetadataFile(file) );
-        // for clean recovery, scrub any incompletely persisted trailing data:
-        clearDataFromOffset( metadata.getPersistenceIndex() ); // TODO make less dangerous. in general, deal with concurrent instances
+        metadata = new MappedFileChannelMetadata(getMetadataFile(file), readSharedMetadata);
         dataBuffer.position(0);
 
-        logger.exit();
+        logger.exit(this);
+    }
+
+    /**
+     * Initializes a new MappedFileChannel over the provided File, with a fixed length.
+     *
+     * @param file   The file over which to map.
+     * @param length The required raw capacity.
+     * @throws IOException if the mapping cannot be created, such as when the File is on a filesystem that does not support DAX.
+     */
+    public MappedFileChannel(File file, int length) throws IOException {
+        this(file, length, false);
     }
 
     /**
@@ -121,16 +135,16 @@ public class MappedFileChannel extends FileChannel {
      * @throws IOException if the channel is still open.
      */
     public void deleteMetadata() throws IOException {
-        logger.entry();
+        logger.entry(this);
 
-        if(fileChannel.isOpen()) {
+        if (fileChannel.isOpen()) {
             IOException ioException = new IOException("Unable to delete metadata for an open channel");
             logger.throwing(ioException);
             throw ioException;
         }
 
         File metadata = getMetadataFile(file);
-        if(metadata.exists()) {
+        if (metadata.exists()) {
             metadata.delete();
         }
 
@@ -146,12 +160,11 @@ public class MappedFileChannel extends FileChannel {
      * ReadableByteChannel} interface. </p>
      *
      * @param dst The buffer into which bytes are to be transferred.
-     *
      * @return The number of bytes read, possibly zero.
      */
     @Override
     public int read(ByteBuffer dst) throws IOException {
-        logger.entry(dst);
+        logger.entry(this, dst);
 
         lock.lock();
         int result = 0;
@@ -185,17 +198,15 @@ public class MappedFileChannel extends FileChannel {
      * method does not modify this channel's position.  If the given position
      * is greater than the file's current size then no bytes are read.  </p>
      *
-     * @param dst The buffer into which bytes are to be transferred.
-     *
+     * @param dst      The buffer into which bytes are to be transferred.
      * @param position The file position at which the transfer is to begin.
-     *
-     * @return  The number of bytes read, possibly zero, or {@code -1} if the
-     *          given position is greater than or equal to the file's current
-     *          persisted size
+     * @return The number of bytes read, possibly zero, or {@code -1} if the
+     * given position is greater than or equal to the file's current
+     * persisted size
      */
     @Override
     public int read(ByteBuffer dst, long position) throws IOException {
-        logger.entry(dst, position);
+        logger.entry(this, dst, position);
 
         lock.lock();
         int result = 0;
@@ -204,13 +215,13 @@ public class MappedFileChannel extends FileChannel {
             validateIsOpen();
             validatePosition(position);
 
-            int length = metadata.getPersistenceIndex()-(int)position;
-            if(length <= 0) {
+            int length = metadata.getPersistenceIndex() - (int) position;
+            if (length <= 0) {
                 length = -1;
             }
             length = Math.min(length, dst.remaining());
 
-            if(length > 0) {
+            if (length > 0) {
                 ByteBuffer srcSlice = dataBuffer.duplicate().position((int) position).limit(((int) position) + length).duplicate();
                 int begin = srcSlice.position();
                 // JDK-14: ByteBuffer srcSlice = dataBuffer.slice((int) position, length);
@@ -237,12 +248,11 @@ public class MappedFileChannel extends FileChannel {
      *
      * @param src The buffer from which bytes are to be transferred.
      *            Its position will be advanced by the returned number of bytes.
-     *
      * @return The number of bytes written, possibly zero.
      */
     @Override
     public int write(ByteBuffer src) throws IOException {
-        logger.entry(src);
+        logger.entry(this, src);
 
         lock.lock();
         int result = 0;
@@ -252,7 +262,7 @@ public class MappedFileChannel extends FileChannel {
 
             result = writeInternal(src, dataBuffer.position());
 
-            dataBuffer.position(dataBuffer.position()+result);
+            dataBuffer.position(dataBuffer.position() + result);
 
         } finally {
             lock.unlock();
@@ -273,15 +283,13 @@ public class MappedFileChannel extends FileChannel {
      * the given file position rather than at the channel's current position.
      * This method does not modify this channel's position.
      *
-     * @param src The buffer from which bytes are to be transferred.
-     *
+     * @param src      The buffer from which bytes are to be transferred.
      * @param position The file position at which the transfer is to begin.
-     *
      * @return The number of bytes written, possibly zero.
      */
     @Override
     public int write(ByteBuffer src, long position) throws IOException {
-        logger.entry(src, position);
+        logger.entry(this, src, position);
 
         lock.lock();
         int result = 0;
@@ -290,7 +298,7 @@ public class MappedFileChannel extends FileChannel {
             validateIsOpen();
             validatePosition(position);
 
-            result = writeInternal(src, (int)position);
+            result = writeInternal(src, (int) position);
 
         } finally {
             lock.unlock();
@@ -302,7 +310,7 @@ public class MappedFileChannel extends FileChannel {
 
     private int writeInternal(ByteBuffer src, int position) throws ClosedChannelException {
 
-        if(position < metadata.getPersistenceIndex()) {
+        if (position < metadata.getPersistenceIndex()) {
             throw new IllegalArgumentException();
         }
 
@@ -314,7 +322,7 @@ public class MappedFileChannel extends FileChannel {
         // JDK-14: ByteBuffer dst = dataBuffer.slice(position, length);
 
         dst.put(srcSlice);
-        src.position(src.position()+length);
+        src.position(src.position() + length);
 
         int startIndex = position;
 
@@ -335,7 +343,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public long position() throws IOException {
-        logger.entry();
+        logger.entry(this);
 
         lock.lock();
         int result = 0;
@@ -363,12 +371,11 @@ public class MappedFileChannel extends FileChannel {
      * and the newly-written bytes to be unspecified.</p>
      *
      * @param newPosition The new position.
-     *
      * @return This file channel.
      */
     @Override
     public FileChannel position(long newPosition) throws ClosedChannelException, IOException {
-        logger.entry(newPosition);
+        logger.entry(this, newPosition);
 
         lock.lock();
 
@@ -395,7 +402,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public long size() throws IOException {
-        logger.entry();
+        logger.entry(this);
 
         lock.lock();
         long result = 0;
@@ -423,7 +430,7 @@ public class MappedFileChannel extends FileChannel {
      * @see #getPersistedSize()
      */
     public long getFileSize() {
-        logger.entry();
+        logger.entry(this);
 
         long result = file.length();
 
@@ -444,7 +451,7 @@ public class MappedFileChannel extends FileChannel {
      * @see #getFileSize()
      */
     public long getPersistedSize() throws ClosedChannelException {
-        logger.entry();
+        logger.entry(this);
 
         lock.lock();
         long result = 0;
@@ -463,7 +470,7 @@ public class MappedFileChannel extends FileChannel {
 
     /**
      * A null-op, since the write methods are immediately persistent.
-
+     *
      * @param metaData ignored.
      * @throws IOException never.
      */
@@ -479,7 +486,7 @@ public class MappedFileChannel extends FileChannel {
      * @throws ClosedChannelException if the channel is not open.
      */
     public void clear() throws ClosedChannelException {
-        logger.entry();
+        logger.entry(this);
 
         lock.lock();
         try {
@@ -508,7 +515,7 @@ public class MappedFileChannel extends FileChannel {
         // we could force every N lines whilst looping above, but assume the hardware cache management
         // knows what it's doing and will elide flushes if they are for lines that have already been
         // evicted by cache pressure.
-        persistenceHandle.persist(0, dataBuffer.capacity()-offset);
+        persistenceHandle.persist(0, dataBuffer.capacity() - offset);
     }
 
     /**
@@ -516,7 +523,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     protected void implCloseChannel() throws IOException {
-        logger.entry();
+        logger.entry(this);
 
         lock.lock();
 
@@ -537,7 +544,7 @@ public class MappedFileChannel extends FileChannel {
     }
 
     private void validateIsOpen() throws ClosedChannelException {
-        if(!fileChannel.isOpen()) {
+        if (!fileChannel.isOpen()) {
             ClosedChannelException closedChannelException = new ClosedChannelException();
             logger.throwing(closedChannelException);
             throw closedChannelException;

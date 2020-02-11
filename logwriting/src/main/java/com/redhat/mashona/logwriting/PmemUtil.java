@@ -43,8 +43,8 @@ public class PmemUtil {
         Constructor fccmdTmp = null;
         try {
             String specVersion = System.getProperty("java.specification.version");
-            if(!specVersion.contains(".") && Integer.parseInt(specVersion) >= 14) {
-                fccTmp = Class.forName("com.redhat.mashona.logwriting.MappedFileChannel").getDeclaredConstructor(File.class, int.class);
+            if (!specVersion.contains(".") && Integer.parseInt(specVersion) >= 14) {
+                fccTmp = Class.forName("com.redhat.mashona.logwriting.MappedFileChannel").getDeclaredConstructor(File.class, int.class, boolean.class);
                 fccmdTmp = Class.forName("com.redhat.mashona.logwriting.MappedFileChannelMetadata").getDeclaredConstructor(File.class);
             }
         } catch (Exception e) {
@@ -56,7 +56,7 @@ public class PmemUtil {
 
     public static void main(String[] args) {
         File dir = new File(args[0]);
-        System.out.println(dir.getAbsolutePath()+": pmem is "+ PmemUtil.isPmemSupportedFor(dir));
+        System.out.println(dir.getAbsolutePath() + ": pmem is " + PmemUtil.isPmemSupportedFor(dir));
     }
 
     /**
@@ -65,8 +65,8 @@ public class PmemUtil {
      * <p>Note that pmemChannelFor implicitly makes this check, so direct calls are not normally required.</p>
      *
      * <p>This method checks that
-     *   a) the JVM is recent enough to have pmem support
-     *   b) the directory is on a DAX mode file system mount
+     * a) the JVM is recent enough to have pmem support
+     * b) the directory is on a DAX mode file system mount
      * </p>
      *
      * <p>Unfortunately due to API limitations the only way perform the latter check to to try a mmap and see if it fails.
@@ -80,17 +80,18 @@ public class PmemUtil {
     public static synchronized boolean isPmemSupportedFor(File dir) {
         logger.entry(dir.getAbsolutePath());
 
-        if(mappedFileChannelConstructor == null) {
+        if (mappedFileChannelConstructor == null) {
+            logger.exit(false);
             return false;
         }
 
-        if(!dir.exists()) {
-            IllegalArgumentException e = new IllegalArgumentException("The directory "+dir.getAbsolutePath()+" must exist");
+        if (!dir.exists()) {
+            IllegalArgumentException e = new IllegalArgumentException("The directory " + dir.getAbsolutePath() + " must exist");
             logger.throwing(e);
             throw e;
         }
-        if(!dir.isDirectory()) {
-            IllegalArgumentException e = new IllegalArgumentException(dir.getAbsolutePath()+" must be a directory");
+        if (!dir.isDirectory()) {
+            IllegalArgumentException e = new IllegalArgumentException(dir.getAbsolutePath() + " must be a directory");
             logger.throwing(e);
             throw e;
         }
@@ -105,11 +106,11 @@ public class PmemUtil {
             logger.exit(true);
             return true;
         } catch (Exception e) {
-            logger.trace("mmap failed for path {}", dir.getAbsolutePath(), e);
+            logger.trace("mmap failed for path {}", dir.getAbsolutePath(), e); // TODO be more specific
             logger.exit(false);
             return false;
         } finally {
-            if(testFile != null && testFile.exists()) {
+            if (testFile != null && testFile.exists()) {
                 testFile.delete();
             }
         }
@@ -118,23 +119,24 @@ public class PmemUtil {
     /**
      * Create a FileChannel over pmem.
      *
-     * @param file The file to map.
-     * @param length The length of the map. The file will be expanded if necessary.
-     * @param create if true, the file will be created. If false and the file does not already exist, a FileNotFoundException is thrown.
+     * @param file               The file to map.
+     * @param length             The length of the map. The file will be expanded if necessary.
+     * @param create             if true, the file will be created. If false and the file does not already exist, a FileNotFoundException is thrown.
+     * @param readSharedMetadata The sharing mode for the persistence metadata.
      * @return a FileChannel using pmem, or null if pmem is not supported.
      * @throws FileNotFoundException if the file does not exist and create is false.
      */
-    public static FileChannel pmemChannelFor(File file, int length, boolean create) throws FileNotFoundException {
+    public static FileChannel pmemChannelFor(File file, int length, boolean create, boolean readSharedMetadata) throws FileNotFoundException {
         logger.entry(file.getAbsolutePath(), create);
 
-        if(!isPmemSupportedFor(file.getParentFile())) {
+        if (!isPmemSupportedFor(file.getParentFile())) {
             logger.exit(null);
             return null;
         }
 
         long initialSize = 0;
-        if(!create) {
-            if(!file.exists()) {
+        if (!create) {
+            if (!file.exists()) {
                 FileNotFoundException e = new FileNotFoundException(file.getAbsolutePath());
                 logger.throwing(e);
                 throw e;
@@ -145,19 +147,32 @@ public class PmemUtil {
 
         FileChannel fileChannel = null;
         try {
-            fileChannel = (FileChannel)mappedFileChannelConstructor.newInstance(file, length);
+            fileChannel = (FileChannel) mappedFileChannelConstructor.newInstance(file, length, readSharedMetadata);
 
         } catch (Exception e) {
             // as long as the isPmemSupportedFor works this should not happen, but...
-            // if the mapping fails after it's already expanded the file to the required size, there is a mess to clean up
+            // if the mapping fails after it has already expanded the file to the required size, there is a mess to clean up
             logger.debug("pmem mapping failed for {}. File may need truncation.", file.getAbsolutePath(), e);
             fileChannel = null;
-            if(create) {
+            if (create) {
                 file.delete();
             }
         }
 
         logger.exit(fileChannel);
         return fileChannel;
+    }
+
+    /**
+     * Create a FileChannel over pmem.
+     *
+     * @param file   The file to map.
+     * @param length The length of the map. The file will be expanded if necessary.
+     * @param create if true, the file will be created. If false and the file does not already exist, a FileNotFoundException is thrown.
+     * @return a FileChannel using pmem, or null if pmem is not supported.
+     * @throws FileNotFoundException if the file does not exist and create is false.
+     */
+    public static FileChannel pmemChannelFor(File file, int length, boolean create) throws FileNotFoundException {
+        return pmemChannelFor(file, length, create, false);
     }
 }
