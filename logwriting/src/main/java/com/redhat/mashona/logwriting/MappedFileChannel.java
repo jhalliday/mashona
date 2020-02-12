@@ -25,7 +25,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.*;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.EnumSet;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -310,6 +310,10 @@ public class MappedFileChannel extends FileChannel {
 
     private int writeInternal(ByteBuffer src, int position) throws ClosedChannelException {
 
+        if(metadata.isReadShared()) {
+            throw new IllegalStateException();
+        }
+
         if (position < metadata.getPersistenceIndex()) {
             throw new IllegalArgumentException();
         }
@@ -324,9 +328,7 @@ public class MappedFileChannel extends FileChannel {
         dst.put(srcSlice);
         src.position(src.position() + length);
 
-        int startIndex = position;
-
-        persist(startIndex, length);
+        persist(position, length);
 
         return length;
     }
@@ -531,11 +533,15 @@ public class MappedFileChannel extends FileChannel {
             // https://bugs.openjdk.java.net/browse/JDK-4724038
             unsafe.invokeCleaner(rawBuffer);
 
-            fileChannel.truncate(metadata.getPersistenceIndex());
-
-            // TODO close metadata (assuming it's private instance)
+            if(!metadata.isReadShared()) {
+                int persistenceIndex = metadata.getPersistenceIndex();
+                logger.trace("truncating {} to {}", file.getAbsolutePath(), persistenceIndex);
+                fileChannel.truncate(persistenceIndex);
+            }
 
             fileChannel.close();
+
+            metadata.close();
 
         } finally {
             lock.unlock();

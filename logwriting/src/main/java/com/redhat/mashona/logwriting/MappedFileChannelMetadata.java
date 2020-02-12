@@ -191,6 +191,15 @@ public class MappedFileChannelMetadata implements Closeable {
     }
 
     /**
+     * Returns the read sharing mode.
+     *
+     * @return true is read sharing is enabled, false otherwise.
+     */
+    public boolean isReadShared() {
+        return readShared;
+    }
+
+    /**
      * Reinitializes the instance.
      *
      * @throws ClosedChannelException if the instance has previously been closed.
