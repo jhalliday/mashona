@@ -32,10 +32,9 @@
         <byteman.version>4.0.10</byteman.version>
         <jmh.version>1.21</jmh.version>
 
-        <!-- You need a jdk14 build recent enough to have the pmem patches (~September 2019)
-                If using a build pre ~December 2019, see also ExecutionTracer mbbConstructor injection point.
-            Note: if compiling jdk yourself, must be an image build not an exploded, or surefire won't find JAVA_VERSION in release file -->
-        <jdk.dir>/home/jhalli/IdeaProjects/openjdk/14/jdk-jdk14/build/linux-x86_64-server-release/images/jdk</jdk.dir>
+        <!-- You need a jdk14 or later to build. -->
+        <jdk.dir>/usr/local/openjdk-14</jdk.dir>
+        <maven.compiler.executable>${jdk.dir}/bin/javac</maven.compiler.executable>
 
         <!-- for running tests, change to point to a directory that is on a pmem DAX mountpoint -->
         <pmem.test.dir>/mnt/pmem/test</pmem.test.dir>
@@ -51,7 +50,7 @@
                     <version>3.8.0</version>
                     <executions>
 
-                        <!-- Almost everything uses jdk 14, but one class is compiled to a 1.8 target so it can be loaded on older JVMs.
+                        <!-- Almost everything uses jdk 14, but some classes are compiled to a 1.8 target so they can be loaded on older JVMs.
                             We could use a multi-version jar instead, but those are better suited where only a few classes are available in newer versions.
                             We have the reverse problem - almost nothing works on old versions. Besides, maven support for packaging multi-version is a mess -->
 
@@ -59,9 +58,9 @@
                             <id>default-compile</id>
                             <configuration>
                                 <fork>true</fork>
-                                <executable>${jdk.dir}/bin/javac</executable>
                                 <excludes>
                                     <exclude>**/PmemUtil.java</exclude>
+                                    <exclude>**/ArrayStore.java</exclude>
                                 </excludes>
                             </configuration>
                         </execution>
@@ -74,7 +73,6 @@
                             </goals>
                             <configuration>
                                 <fork>true</fork>
-                                <executable>${jdk.dir}/bin/javac</executable>
                             </configuration>
                         </execution>
 
@@ -86,11 +84,11 @@
                             <configuration>
                                 <includes>
                                     <include>**/PmemUtil.java</include>
+                                    <include>**/ArrayStore.java</include>
                                 </includes>
                                 <source>1.8</source>
                                 <target>1.8</target>
                                 <fork>true</fork>
-                                <executable>${jdk.dir}/bin/javac</executable>
                             </configuration>
                         </execution>
 

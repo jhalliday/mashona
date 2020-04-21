@@ -18,6 +18,7 @@ import org.slf4j.ext.XLoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.channels.FileChannel;
 
@@ -37,21 +38,26 @@ public class PmemUtil {
     private static final Constructor mappedFileChannelConstructor;
     private static final Constructor mappedFileChannelMetadataConstructor;
 
+    private static final Constructor arrayStoreConstructor;
+
     static {
 
         Constructor fccTmp = null;
         Constructor fccmdTmp = null;
+        Constructor asTmp = null;
         try {
             String specVersion = System.getProperty("java.specification.version");
             if (!specVersion.contains(".") && Integer.parseInt(specVersion) >= 14) {
                 fccTmp = Class.forName("com.redhat.mashona.logwriting.MappedFileChannel").getDeclaredConstructor(File.class, int.class, boolean.class);
                 fccmdTmp = Class.forName("com.redhat.mashona.logwriting.MappedFileChannelMetadata").getDeclaredConstructor(File.class);
+                asTmp = Class.forName("com.redhat.mashona.logwriting.ArrayStoreImpl").getDeclaredConstructor(File.class, int.class, int.class);
             }
         } catch (Exception e) {
-            logger.debug("Can't wire MappedFileChannel constructor", e);
+            logger.debug("Can't wire constructor functions", e);
         }
         mappedFileChannelConstructor = fccTmp;
         mappedFileChannelMetadataConstructor = fccmdTmp;
+        arrayStoreConstructor = asTmp;
     }
 
     public static void main(String[] args) {
@@ -174,5 +180,35 @@ public class PmemUtil {
      */
     public static FileChannel pmemChannelFor(File file, int length, boolean create) throws FileNotFoundException {
         return pmemChannelFor(file, length, create, false);
+    }
+
+    /**
+     * Create an ArrayStore over the given file.
+     *
+     * @param file             the backing file to use.
+     * @param numberOfSlots    the number of individually accessible storage regions.
+     * @param slotDataCapacity the maximum data storage size of each slot.
+     * @return new newly created ArrayStore instance.
+     * @throws IOException if the store cannot be created.
+     */
+    public static ArrayStore arrayStoreFor(File file, int numberOfSlots, int slotDataCapacity) throws IOException {
+        logger.entry(file.getAbsolutePath(), numberOfSlots, slotDataCapacity);
+
+        if (!isPmemSupportedFor(file.getParentFile())) {
+            logger.exit(null);
+            return null;
+        }
+
+        try {
+
+            ArrayStore arrayStore = (ArrayStore) arrayStoreConstructor.newInstance(file, numberOfSlots, slotDataCapacity);
+            logger.exit(arrayStore);
+            return arrayStore;
+
+        } catch (Exception e) {
+            IOException ioException = new IOException("Could not create array store", e);
+            logger.throwing(ioException);
+            throw ioException;
+        }
     }
 }

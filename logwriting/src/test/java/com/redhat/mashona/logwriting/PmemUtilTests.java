@@ -60,7 +60,7 @@ public class PmemUtilTests {
         fileChannel.close();
         assertEquals(2, testDir.listFiles().length); // file+metadata
         testFile.delete();
-        ((MappedFileChannel)fileChannel).deleteMetadata();
+        ((MappedFileChannel) fileChannel).deleteMetadata();
     }
 
     @Test
@@ -75,5 +75,17 @@ public class PmemUtilTests {
         assertThrows(FileNotFoundException.class, () -> PmemUtil.pmemChannelFor(testFile, 1024, false));
 
         testFile.delete();
+    }
+
+    @Test
+    public void testArrayStore() throws Exception {
+
+        File testDir = new File(System.getenv("PMEM_TEST_DIR"), "tx");
+        testDir.mkdir();
+        File testFile = new File(testDir, "test");
+
+        ArrayStore arrayStore = PmemUtil.arrayStoreFor(testFile, 10, 10);
+
+        assertNotNull(arrayStore);
     }
 }
