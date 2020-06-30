@@ -37,7 +37,7 @@
         <maven.compiler.executable>${jdk.dir}/bin/javac</maven.compiler.executable>
 
         <!-- for running tests, change to point to a directory that is on a pmem DAX mountpoint -->
-        <pmem.test.dir>/mnt/pmem/tx</pmem.test.dir>
+        <pmem.test.dir>/mnt/pmem/test</pmem.test.dir>
     </properties>
 
     <build>
@@ -77,6 +77,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
                 <configuration>
+                    <environmentVariables>
+                        <PMEM_TEST_DIR>${pmem.test.dir}</PMEM_TEST_DIR>
+                    </environmentVariables>
                     <argLine>--add-modules=jdk.incubator.foreign</argLine>
                 </configuration>
             </plugin>
