@@ -10,28 +10,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 /**
- * Transaction log entry for recording memory release (i.e. free) operations.
+ * Transaction log entry for recording memory allocation operations.
  *
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
  */
-public class DeleteEvent implements LoggableTransactionEvent {
+public class MallocEvent implements TransactionEvent {
 
     private final long offset;
     private final long size;
+    private final boolean forInternalUse;
 
     /**
-     * Creates a record of the deletion/freeing of a heap memory allocation.
+     * Creates a record of the allocation of a region of memory from a heap.
      *
-     * @param offset the starting location of the memory, measured from the base of the heap.
-     * @param size   the length of the memory region.
+     * @param offset         the starting location of the memory, measured from the base of the heap.
+     * @param size           the length of the memory region.
+     * @param forInternalUse true if the memory is for bookkeeping use by the allocator itself, false for user requests.
      */
-    public DeleteEvent(long offset, long size) {
+    public MallocEvent(long offset, long size, boolean forInternalUse) {
         this.offset = offset;
         this.size = size;
+        this.forInternalUse = forInternalUse;
     }
 
     public long getOffset() {
@@ -40,5 +43,9 @@ public class DeleteEvent implements LoggableTransactionEvent {
 
     public long getSize() {
         return size;
+    }
+
+    public boolean isForInternalUse() {
+        return forInternalUse;
     }
 }

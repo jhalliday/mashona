@@ -10,31 +10,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
+
+import java.nio.ByteBuffer;
 
 /**
- * Transaction log entry for recording memory allocation operations.
+ * Transaction log entry for recording pre-modification state of an area of memory.
  *
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
  */
-public class MallocEvent implements LoggableTransactionEvent {
+public class BeforeWriteEvent implements TransactionEvent {
 
     private final long offset;
     private final long size;
-    private final boolean forInternalUse;
+    private final ByteBuffer byteBuffer;
 
     /**
-     * Creates a record of the allocation of a region of memory from a heap.
+     * Create a transaction log entry capturing the pre-modification value of a region of memory.
      *
-     * @param offset         the starting location of the memory, measured from the base of the heap.
-     * @param size           the length of the memory region.
-     * @param forInternalUse true if the memory is for bookkeeping use by the allocator itself, false for user requests.
+     * @param offset     the starting location of the memory, measured from the base of the heap.
+     * @param size       the length of the memory region.
+     * @param byteBuffer A buffer holding the memory value. This buffer will NOT be copied,
+     *                   so must already be backed by memory independent of that about to be modified.
      */
-    public MallocEvent(long offset, long size, boolean forInternalUse) {
+    public BeforeWriteEvent(long offset, long size, ByteBuffer byteBuffer) {
         this.offset = offset;
         this.size = size;
-        this.forInternalUse = forInternalUse;
+        this.byteBuffer = byteBuffer;
     }
 
     public long getOffset() {
@@ -45,7 +48,7 @@ public class MallocEvent implements LoggableTransactionEvent {
         return size;
     }
 
-    public boolean isForInternalUse() {
-        return forInternalUse;
+    public ByteBuffer getByteBuffer() {
+        return byteBuffer;
     }
 }

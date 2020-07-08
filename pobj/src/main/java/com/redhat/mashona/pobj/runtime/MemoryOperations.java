@@ -78,7 +78,7 @@ public class MemoryOperations {
         return memorySegment;
     }
 
-    public void close() {
+    public void delete() {
         memorySegment.close();
     }
 

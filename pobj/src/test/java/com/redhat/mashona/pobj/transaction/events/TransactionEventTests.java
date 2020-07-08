@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 import org.junit.jupiter.api.Test;
 
@@ -35,10 +35,22 @@ public class TransactionEventTests {
     }
 
     @Test
+    public void testCreateEvent() {
+        CreateEvent createEvent = new CreateEvent(null);
+        assertNull(createEvent.getMemory());
+    }
+
+    @Test
+    public void testDeallocateEvent() {
+        DeallocateEvent deallocateEvent = new DeallocateEvent(100, 200);
+        assertEquals(100, deallocateEvent.getOffset());
+        assertEquals(200, deallocateEvent.getSize());
+    }
+
+    @Test
     public void testDeleteEvent() {
-        DeleteEvent deleteEvent = new DeleteEvent(100, 200);
-        assertEquals(100, deleteEvent.getOffset());
-        assertEquals(200, deleteEvent.getSize());
+        DeleteEvent deleteEvent = new DeleteEvent(null);
+        assertNull(deleteEvent.getMemory());
     }
 
     @Test

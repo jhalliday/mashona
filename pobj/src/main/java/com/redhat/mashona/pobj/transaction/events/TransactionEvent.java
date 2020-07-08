@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 /**
  * Marker interface for transaction log entry types.
@@ -18,5 +18,5 @@ package com.redhat.mashona.pobj.transaction.logentries;
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
  */
-public interface LoggableTransactionEvent {
+public interface TransactionEvent {
 }

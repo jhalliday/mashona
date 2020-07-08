@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -18,16 +18,16 @@ import org.slf4j.ext.XLoggerFactory;
 import java.nio.ByteBuffer;
 
 /**
- * Persistence helper for (de)serializing memory release (free) DeleteEvent records in a ByteBuffer backed transaction log.
+ * Persistence helper for (de)serializing terminal commit/rollback decision OutcomeEvent records in a ByteBuffer backed transaction log.
  *
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
  */
-public class DeleteEventPersistence implements LoggableTransactionEventPersistence<DeleteEvent> {
+public class OutcomeEventPersistence implements TransactionEventPersistence<OutcomeEvent> {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(DeleteEventPersistence.class);
+    private static final XLogger logger = XLoggerFactory.getXLogger(OutcomeEventPersistence.class);
 
-    public static final long pmemUID = 0xFCFC;
+    public static final long pmemUID = 0xFDFD;
 
     /**
      * {@inheritDoc}
@@ -41,27 +41,25 @@ public class DeleteEventPersistence implements LoggableTransactionEventPersisten
      * {@inheritDoc}
      */
     @Override
-    public DeleteEvent readFrom(ByteBuffer byteBuffer) {
+    public OutcomeEvent readFrom(ByteBuffer byteBuffer) {
         logger.entry(byteBuffer);
 
-        long offset = byteBuffer.getLong();
-        long size = byteBuffer.getLong();
-        DeleteEvent deleteEvent = new DeleteEvent(offset, size);
+        int commit = byteBuffer.getInt();
+        OutcomeEvent outcomeEvent = new OutcomeEvent(commit == 1);
 
-        logger.exit(deleteEvent);
-        return deleteEvent;
+        logger.exit(outcomeEvent);
+        return outcomeEvent;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeInto(DeleteEvent deleteEvent, ByteBuffer byteBuffer) {
-        logger.entry(deleteEvent, byteBuffer);
+    public void writeInto(OutcomeEvent outcomeEvent, ByteBuffer byteBuffer) {
+        logger.entry(outcomeEvent, byteBuffer);
 
         byteBuffer.putLong(pmemUID);
-        byteBuffer.putLong(deleteEvent.getOffset());
-        byteBuffer.putLong(deleteEvent.getSize());
+        byteBuffer.putInt(outcomeEvent.commit ? 1 : 0);
 
         logger.exit();
     }

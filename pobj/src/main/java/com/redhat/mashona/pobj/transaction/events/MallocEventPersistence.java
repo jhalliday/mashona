@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -18,16 +18,16 @@ import org.slf4j.ext.XLoggerFactory;
 import java.nio.ByteBuffer;
 
 /**
- * Persistence helper for (de)serializing BeforeWriteEvent records to a ByteBuffer backed transaction log.
+ * Persistence helper for (de)serializing memory allocation MallocEvent records in a ByteBuffer backed transaction log.
  *
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
  */
-public class BeforeWriteEventPersistence implements LoggableTransactionEventPersistence<BeforeWriteEvent> {
+public class MallocEventPersistence implements TransactionEventPersistence<MallocEvent> {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(BeforeWriteEventPersistence.class);
+    private static final XLogger logger = XLoggerFactory.getXLogger(MallocEventPersistence.class);
 
-    public static final long pmemUID = 0xFEFE;
+    public static final long pmemUID = 0xFFFF;
 
     /**
      * {@inheritDoc}
@@ -41,31 +41,29 @@ public class BeforeWriteEventPersistence implements LoggableTransactionEventPers
      * {@inheritDoc}
      */
     @Override
-    public BeforeWriteEvent readFrom(ByteBuffer byteBuffer) {
+    public MallocEvent readFrom(ByteBuffer byteBuffer) {
         logger.entry(byteBuffer);
 
         long offset = byteBuffer.getLong();
         long size = byteBuffer.getLong();
-        ByteBuffer dataBuffer = ByteBuffer.allocate((int) size);
-        dataBuffer.put(byteBuffer.duplicate().limit(byteBuffer.position() + (int) size));
-        byteBuffer.position(byteBuffer.position() + (int) size);
-        BeforeWriteEvent beforeWriteEvent = new BeforeWriteEvent(offset, size, dataBuffer.rewind());
+        int forInternalUse = byteBuffer.getInt();
+        MallocEvent mallocEvent = new MallocEvent(offset, size, forInternalUse == 1);
 
-        logger.exit(beforeWriteEvent);
-        return beforeWriteEvent;
+        logger.exit(mallocEvent);
+        return mallocEvent;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeInto(BeforeWriteEvent beforeWriteEvent, ByteBuffer byteBuffer) {
-        logger.entry(beforeWriteEvent, byteBuffer);
+    public void writeInto(MallocEvent mallocEvent, ByteBuffer byteBuffer) {
+        logger.entry(mallocEvent, byteBuffer);
 
         byteBuffer.putLong(pmemUID);
-        byteBuffer.putLong(beforeWriteEvent.getOffset());
-        byteBuffer.putLong(beforeWriteEvent.getSize());
-        byteBuffer.put(beforeWriteEvent.getByteBuffer().duplicate().rewind());
+        byteBuffer.putLong(mallocEvent.getOffset());
+        byteBuffer.putLong(mallocEvent.getSize());
+        byteBuffer.putInt(mallocEvent.isForInternalUse() ? 1 : 0);
 
         logger.exit();
     }

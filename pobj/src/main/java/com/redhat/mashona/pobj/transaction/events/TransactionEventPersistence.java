@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 import java.nio.ByteBuffer;
 
@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
  */
-public interface LoggableTransactionEventPersistence<T extends LoggableTransactionEvent> {
+public interface TransactionEventPersistence<T extends TransactionEvent> {
 
     /**
      * Provides a unique value to distinguish a type of persisted record from others.

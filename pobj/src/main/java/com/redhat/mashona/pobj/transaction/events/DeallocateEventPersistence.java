@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -18,16 +18,16 @@ import org.slf4j.ext.XLoggerFactory;
 import java.nio.ByteBuffer;
 
 /**
- * Persistence helper for (de)serializing memory allocation MallocEvent records in a ByteBuffer backed transaction log.
+ * Persistence helper for (de)serializing memory release (free) DeleteEvent records in a ByteBuffer backed transaction log.
  *
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
  */
-public class MallocEventPersistence implements LoggableTransactionEventPersistence<MallocEvent> {
+public class DeallocateEventPersistence implements TransactionEventPersistence<DeallocateEvent> {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(MallocEventPersistence.class);
+    private static final XLogger logger = XLoggerFactory.getXLogger(DeallocateEventPersistence.class);
 
-    public static final long pmemUID = 0xFFFF;
+    public static final long pmemUID = 0xFCFC;
 
     /**
      * {@inheritDoc}
@@ -41,29 +41,27 @@ public class MallocEventPersistence implements LoggableTransactionEventPersisten
      * {@inheritDoc}
      */
     @Override
-    public MallocEvent readFrom(ByteBuffer byteBuffer) {
+    public DeallocateEvent readFrom(ByteBuffer byteBuffer) {
         logger.entry(byteBuffer);
 
         long offset = byteBuffer.getLong();
         long size = byteBuffer.getLong();
-        int forInternalUse = byteBuffer.getInt();
-        MallocEvent mallocEvent = new MallocEvent(offset, size, forInternalUse == 1);
+        DeallocateEvent deallocateEvent = new DeallocateEvent(offset, size);
 
-        logger.exit(mallocEvent);
-        return mallocEvent;
+        logger.exit(deallocateEvent);
+        return deallocateEvent;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeInto(MallocEvent mallocEvent, ByteBuffer byteBuffer) {
-        logger.entry(mallocEvent, byteBuffer);
+    public void writeInto(DeallocateEvent deallocateEvent, ByteBuffer byteBuffer) {
+        logger.entry(deallocateEvent, byteBuffer);
 
         byteBuffer.putLong(pmemUID);
-        byteBuffer.putLong(mallocEvent.getOffset());
-        byteBuffer.putLong(mallocEvent.getSize());
-        byteBuffer.putInt(mallocEvent.isForInternalUse() ? 1 : 0);
+        byteBuffer.putLong(deallocateEvent.getOffset());
+        byteBuffer.putLong(deallocateEvent.getSize());
 
         logger.exit();
     }

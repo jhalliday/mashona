@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 import org.junit.jupiter.api.Test;
 
@@ -45,15 +45,15 @@ public class TransactionEventPersistenceTests {
 
     @Test
     public void testDeleteEventPersistence() {
-        DeleteEvent before = new DeleteEvent(100, 200);
-        DeleteEventPersistence persistence = new DeleteEventPersistence();
+        DeallocateEvent before = new DeallocateEvent(100, 200);
+        DeallocateEventPersistence persistence = new DeallocateEventPersistence();
 
         ByteBuffer byteBuffer = ByteBuffer.allocate(50);
         persistence.writeInto(before, byteBuffer);
         byteBuffer.rewind();
 
         assertEquals(persistence.getFormatId(), byteBuffer.getLong());
-        DeleteEvent after = persistence.readFrom(byteBuffer);
+        DeallocateEvent after = persistence.readFrom(byteBuffer);
 
         assertEquals(before.getOffset(), after.getOffset());
         assertEquals(before.getSize(), after.getSize());

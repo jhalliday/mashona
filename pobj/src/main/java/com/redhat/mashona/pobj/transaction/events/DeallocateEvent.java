@@ -10,28 +10,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.pobj.transaction.logentries;
+package com.redhat.mashona.pobj.transaction.events;
 
 /**
- * Transaction log entry for recording terminal commit/rollback decision.
+ * Transaction log entry for recording memory release (i.e. free) operations.
  *
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
  */
-public class OutcomeEvent implements LoggableTransactionEvent {
+public class DeallocateEvent implements TransactionEvent {
 
-    public final boolean commit;
+    private final long offset;
+    private final long size;
 
     /**
-     * Creates a record of the terminal state of a transaction.
+     * Creates a record of the deletion/freeing of a heap memory allocation.
      *
-     * @param commit true for committed transactions, false for those rolled back.
+     * @param offset the starting location of the memory, measured from the base of the heap.
+     * @param size   the length of the memory region.
      */
-    public OutcomeEvent(boolean commit) {
-        this.commit = commit;
+    public DeallocateEvent(long offset, long size) {
+        this.offset = offset;
+        this.size = size;
     }
 
-    public boolean isCommit() {
-        return commit;
+    public long getOffset() {
+        return offset;
+    }
+
+    public long getSize() {
+        return size;
     }
 }

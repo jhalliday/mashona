@@ -146,10 +146,11 @@ public class MemoryHeap {
 
         validateIsOpen();
 
-        MemorySegment memorySegment = object.getMemory().getMemorySegment();
-        long heapOffset = object.getMemory().getHeapOffset();
+        MemoryOperations memoryOperations = object.getMemory();
+        long heapOffset = memoryOperations.getHeapOffset();
+        MemorySegment memorySegment = memoryOperations.getMemorySegment();
         compositeAllocator.free(heapOffset, memorySegment.byteSize());
-        memorySegment.close();
+        memoryOperations.delete();
 
         logger.exit();
     }
