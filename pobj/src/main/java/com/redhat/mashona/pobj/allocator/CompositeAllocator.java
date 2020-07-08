@@ -25,7 +25,7 @@ import java.util.List;
  * by treating the overall space as dynamically composed of regions dedicated for each allocation size.
  * <p>
  * This class provides bookkeeping only. The actual memory space being managed is theoretical
- * to the allocator and must be provided elsewhere, as by e.g. PmemHeap.
+ * to the allocator and must be provided elsewhere, as by e.g. MemoryHeap.
  * <p>
  * This class is NOT threadsafe.
  *

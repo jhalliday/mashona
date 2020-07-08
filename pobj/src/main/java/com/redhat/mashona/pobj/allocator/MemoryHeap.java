@@ -68,6 +68,15 @@ public class MemoryHeap {
 
     protected final CompositeAllocator compositeAllocator;
 
+    /**
+     * Create a new heap abstraction over a given file, with memory use tracking as provided by the allocator.
+     *
+     * @param file The backing file for persistent storage.
+     * @param length The size in bytes of the memory region. Care should be taken that this is at least as big
+     *               as that configured for the provide allocator.
+     * @param compositeAllocator The memory use bookkeeping object.
+     * @throws IOException if memory mapping of the file fails.
+     */
     public MemoryHeap(File file, long length, CompositeAllocator compositeAllocator) throws IOException {
         logger.entry(file, length, compositeAllocator);
 

@@ -78,6 +78,9 @@ public class MemoryOperations {
         return memorySegment;
     }
 
+    /**
+     * End use of backing memory, rendering in inaccessible to read or write operations.
+     */
     public void delete() {
         memorySegment.close();
     }
