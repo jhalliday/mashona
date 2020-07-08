@@ -39,8 +39,9 @@ public class MemoryOperations {
     private static final VarHandle longHandle = MemoryHandles.varHandle(long.class, ByteOrder.BIG_ENDIAN);
     private static final VarHandle shortHandle = MemoryHandles.varHandle(short.class, ByteOrder.BIG_ENDIAN);
 
-    protected MemorySegment memorySegment;
+    protected final long heapOffset;
 
+    protected MemorySegment memorySegment;
     protected MemoryAddress baseAddress;
     protected ByteBuffer byteBuffer;
 
@@ -49,12 +50,23 @@ public class MemoryOperations {
     /**
      * Creates a new instance by wrapping the provided segment.
      *
+     * @param heapOffset the base address of the object, relative to the heap it is allocated from.
      * @param memorySegment the area of backing memory to use.
      */
-    public MemoryOperations(MemorySegment memorySegment) {
+    public MemoryOperations(long heapOffset, MemorySegment memorySegment) {
+        this.heapOffset = heapOffset;
         this.memorySegment = memorySegment;
         baseAddress = memorySegment.baseAddress();
         byteBuffer = memorySegment.asByteBuffer();
+    }
+
+    /**
+     * Returns the base address of the object, relative to the heap on which it is allocated.
+     *
+     * @return the base address of the object, in bytes from the start of the heap.
+     */
+    public long getHeapOffset() {
+        return heapOffset;
     }
 
     /**

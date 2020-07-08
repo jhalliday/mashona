@@ -147,7 +147,8 @@ public class MemoryHeap {
         validateIsOpen();
 
         MemorySegment memorySegment = object.getMemory().getMemorySegment();
-        compositeAllocator.free(memorySegment.baseAddress().offset(), memorySegment.byteSize());
+        long heapOffset = object.getMemory().getHeapOffset();
+        compositeAllocator.free(heapOffset, memorySegment.byteSize());
         memorySegment.close();
 
         logger.exit();
@@ -162,6 +163,6 @@ public class MemoryHeap {
     }
 
     protected MemoryOperations wrapMemory(long addr, MemorySegment memorySegment) {
-        return new MemoryOperations(memorySegment);
+        return new MemoryOperations(addr, memorySegment);
     }
 }
