@@ -95,16 +95,16 @@ public class MappedFileChannelMetadataTests {
 
         mappedFileChannelMetadata = new MappedFileChannelMetadata(file);
         assertEquals(0, mappedFileChannelMetadata.getPersistenceIndex());
-        MappedFileChannelMetadata readSlave = new MappedFileChannelMetadata(file, true);
-        assertEquals(0, readSlave.getPersistenceIndex());
+        MappedFileChannelMetadata readFollower = new MappedFileChannelMetadata(file, true);
+        assertEquals(0, readFollower.getPersistenceIndex());
 
         mappedFileChannelMetadata.persist(0, 10);
         assertEquals(10, mappedFileChannelMetadata.getPersistenceIndex());
-        assertEquals(10, readSlave.getPersistenceIndex());
+        assertEquals(10, readFollower.getPersistenceIndex());
 
-        readSlave.persist(10, 10);
+        readFollower.persist(10, 10);
         assertEquals(10, mappedFileChannelMetadata.getPersistenceIndex());
-        assertEquals(20, readSlave.getPersistenceIndex());
+        assertEquals(20, readFollower.getPersistenceIndex());
     }
 
 }
