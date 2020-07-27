@@ -40,6 +40,7 @@ public class RegionBitmapTests {
         for (int i = 0; i < regionBitmap.getMaxElements(); i++) {
             long allocation = regionBitmap.allocate();
             assertTrue(allocations.add(allocation));
+            assertFalse(regionBitmap.isFree(allocation));
         }
 
         assertEquals(regionBitmap.getMaxElements(), allocations.size());
@@ -49,6 +50,7 @@ public class RegionBitmapTests {
 
         for (Long l : allocations) {
             regionBitmap.free(l);
+            assertTrue(regionBitmap.isFree(l));
         }
 
         assertEquals(regionBitmap.getMaxElements(), regionBitmap.getNumAvail());

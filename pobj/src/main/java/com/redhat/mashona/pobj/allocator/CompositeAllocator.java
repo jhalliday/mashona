@@ -141,6 +141,23 @@ public class CompositeAllocator {
     public void free(long address, long size) {
         logger.entry(address, size);
 
+        RegionBitmap regionBitmap = findAllocationBitmap(address, size);
+        regionBitmap.free(address);
+
+        logger.exit();
+    }
+
+    public boolean isFree(long address, long size) {
+        logger.entry(address, size);
+
+        RegionBitmap regionBitmap = findAllocationBitmap(address, size);
+        boolean isFree = regionBitmap == null || regionBitmap.isFree(address);
+
+        logger.exit(isFree);
+        return isFree;
+    }
+
+    protected RegionBitmap findAllocationBitmap(long address, long size) {
         int x = Arrays.binarySearch(elementSizes, size);
 
         if (x < 0) {
@@ -158,8 +175,11 @@ public class CompositeAllocator {
         if (y < 0) {
             y = Math.abs(y) - 2;
         }
+        if(y < 0) {
+            return null;
+        }
         RegionBitmap regionBitmap = regionBitmapList.get(y);
-        regionBitmap.free(address);
+        return regionBitmap;
     }
 
     protected RegionBitmap increaseForAllocationClass(int x) {

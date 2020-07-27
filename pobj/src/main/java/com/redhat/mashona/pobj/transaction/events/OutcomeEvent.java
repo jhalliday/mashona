@@ -12,6 +12,8 @@
  */
 package com.redhat.mashona.pobj.transaction.events;
 
+import java.util.Objects;
+
 /**
  * Transaction log entry for recording terminal commit/rollback decision.
  *
@@ -33,5 +35,18 @@ public class OutcomeEvent implements TransactionEvent {
 
     public boolean isCommit() {
         return commit;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        OutcomeEvent that = (OutcomeEvent) o;
+        return commit == that.commit;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(commit);
     }
 }

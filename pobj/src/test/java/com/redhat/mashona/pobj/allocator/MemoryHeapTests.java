@@ -65,7 +65,13 @@ public class MemoryHeapTests {
         mboTestEntity.setMyByte((byte) 1);
         assertEquals(1, mboTestEntity.getMyByte());
 
+        MBOTestEntity duplicateTestEntity = memoryHeap.attachInstance(MBOTestEntity.class, mboTestEntity.getMemory().getHeapOffset());
+        assertEquals(1, duplicateTestEntity.getMyByte());
+
         memoryHeap.delete(mboTestEntity);
+        memoryHeap.delete(duplicateTestEntity);
+
+        assertThrows(IllegalArgumentException.class, () -> memoryHeap.attachInstance(MBOTestEntity.class, mboTestEntity.getMemory().getHeapOffset()));
 
         assertThrows(IllegalStateException.class, () -> mboTestEntity.setMyByte((byte) 1));
     }

@@ -12,7 +12,6 @@
  */
 package com.redhat.mashona.pobj.transaction;
 
-import com.redhat.mashona.pobj.generated.MBOTestEntity;
 import com.redhat.mashona.pobj.generated.PointImpl;
 import com.redhat.mashona.pobj.transaction.events.*;
 import org.junit.jupiter.api.AfterEach;
@@ -34,13 +33,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class TransactionWiringTests {
 
-    private TransactionManager transactionManager;
-    private TransactionalCompositeAllocator compositeAllocator;
-    private TransactionalMemoryHeap transactionalMemoryHeap;
+    protected TransactionManager transactionManager;
+    protected TransactionalCompositeAllocator compositeAllocator;
+    protected TransactionalMemoryHeap transactionalMemoryHeap;
+
+    protected TransactionManager getTransactionManager() {
+        return new TransactionManager();
+    }
+
+    protected void checkTransactionLog() {
+        // null-op here in the volatile version - extension point for PersistentTransactionWiringTests
+    }
 
     @BeforeEach
     public void setUp() throws IOException {
-        transactionManager = new TransactionManager();
+        transactionManager = getTransactionManager();
         compositeAllocator = new TransactionalCompositeAllocator(0, 1024 * 1024 * 4, transactionManager);
         transactionalMemoryHeap = new TransactionalMemoryHeap(
                 new File("/mnt/pmem/test/heap"), compositeAllocator.getBackingSize(), compositeAllocator, transactionManager);
@@ -86,6 +93,8 @@ public class TransactionWiringTests {
         assertEquals(DeallocateEvent.class, entries.get(6).getClass()); // deallocate pointB
         assertEquals(DeleteEvent.class, entries.get(7).getClass()); // delete pointB
         assertEquals(OutcomeEvent.class, entries.get(8).getClass()); // commit
+
+        checkTransactionLog();
 
         transactionManager.begin();
         pointA.getMemory().delete();
@@ -134,6 +143,8 @@ public class TransactionWiringTests {
         assertEquals(CreateEvent.class, entries.get(4).getClass()); // create pointC
         assertEquals(BeforeWriteEvent.class, entries.get(5).getClass()); // pointC.setX
         assertEquals(OutcomeEvent.class, entries.get(6).getClass()); // rollback
+
+        checkTransactionLog();
 
         transactionManager.begin();
         pointA.getMemory().delete();

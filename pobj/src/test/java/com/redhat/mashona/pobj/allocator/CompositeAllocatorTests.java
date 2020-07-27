@@ -69,6 +69,7 @@ public class CompositeAllocatorTests {
     private void empty(CompositeAllocator compositeAllocator, int elementSize, List<Long> addresses) {
         for (Long l : addresses) {
             compositeAllocator.free(l, elementSize);
+            assertTrue(compositeAllocator.isFree(l, elementSize));
         }
     }
 
@@ -78,6 +79,7 @@ public class CompositeAllocatorTests {
         for (int i = 0; i < n; i++) {
             Long addr = compositeAllocator.allocate(elementSize);
             allocatedAddresses.add(addr);
+            assertFalse(compositeAllocator.isFree(addr, elementSize));
         }
         return allocatedAddresses;
     }

@@ -13,6 +13,7 @@
 package com.redhat.mashona.pobj.transaction.events;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 /**
  * Transaction log entry for recording pre-modification state of an area of memory.
@@ -50,5 +51,20 @@ public class BeforeWriteEvent implements TransactionEvent {
 
     public ByteBuffer getByteBuffer() {
         return byteBuffer;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BeforeWriteEvent that = (BeforeWriteEvent) o;
+        return offset == that.offset &&
+                size == that.size &&
+                byteBuffer.equals(that.byteBuffer);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(offset, size, byteBuffer);
     }
 }

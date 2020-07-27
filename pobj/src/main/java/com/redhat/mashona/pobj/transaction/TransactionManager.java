@@ -26,7 +26,7 @@ public class TransactionManager {
     private static final XLogger logger = XLoggerFactory.getXLogger(TransactionManager.class);
 
     private TransactionalMemoryHeap transactionalMemoryHeap;
-    private VolatileTransaction currentTransaction;
+    protected VolatileTransaction currentTransaction;
 
     /**
      * Create a new transaction

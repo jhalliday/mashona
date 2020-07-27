@@ -77,5 +77,6 @@ public class TransactionalMemoryHeap extends MemoryHeap {
     protected void undo(BeforeWriteEvent beforeWriteEvent) {
         MemorySegment segment = memorySegment.asSlice(beforeWriteEvent.getOffset(), beforeWriteEvent.getSize());
         segment.asByteBuffer().put(beforeWriteEvent.getByteBuffer());
+        beforeWriteEvent.getByteBuffer().rewind();
     }
 }

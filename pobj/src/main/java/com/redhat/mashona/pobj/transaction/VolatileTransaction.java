@@ -84,7 +84,8 @@ public class VolatileTransaction {
         logger.entry();
 
         OutcomeEvent outcomeEvent = new OutcomeEvent(true);
-        events.add(outcomeEvent);
+        recordOutcomeEvent(outcomeEvent);
+
         complete();
 
         logger.exit();
@@ -94,10 +95,15 @@ public class VolatileTransaction {
         logger.entry(transactionalPmemHeap);
 
         OutcomeEvent outcomeEvent = new OutcomeEvent(false);
-        events.add(outcomeEvent);
+        recordOutcomeEvent(outcomeEvent);
+
         undo(transactionalPmemHeap);
 
         logger.exit();
+    }
+
+    protected void recordOutcomeEvent(OutcomeEvent outcomeEvent) {
+        events.add(outcomeEvent);
     }
 
     protected void complete() {

@@ -12,6 +12,8 @@
  */
 package com.redhat.mashona.pobj.transaction.events;
 
+import java.util.Objects;
+
 /**
  * Transaction log entry for recording memory release (i.e. free) operations.
  *
@@ -40,5 +42,19 @@ public class DeallocateEvent implements TransactionEvent {
 
     public long getSize() {
         return size;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DeallocateEvent that = (DeallocateEvent) o;
+        return offset == that.offset &&
+                size == that.size;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(offset, size);
     }
 }

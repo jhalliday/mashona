@@ -183,6 +183,29 @@ public class RegionBitmap implements Comparable<Long> {
         logger.exit();
     }
 
+    /**
+     * Determine if a given handle is currently allocated or now.
+     *
+     * @param handle The memory address, as previously returned by allocate.
+     * @return true if the handle is unused (free), false if it is currently allocated.
+     */
+    public boolean isFree(long handle) {
+        logger.entry(handle);
+
+        if (handle < baseAddress || handle > toHandle(getMaxElements())) {
+            throw new IllegalArgumentException();
+        }
+
+        int bitmapIdx = toBitmapIndex(handle);
+        int q = bitmapIdx >>> 6;
+        int r = bitmapIdx & 63;
+
+        boolean isFree = ((bitmap[q] >>> r & 1) == 0);
+
+        logger.exit(isFree);
+        return isFree;
+    }
+
     private long toHandle(int bitmapIdx) {
         return baseAddress + (elementSize * bitmapIdx);
     }

@@ -120,18 +120,33 @@ public class MemoryHeap {
     public synchronized <T extends MemoryBackedObject> T newInstance(Class<T> objectClass) {
         logger.entry(objectClass.getName());
 
+        return attachInstance(objectClass, -1);
+    }
+
+    public synchronized <T extends MemoryBackedObject> T attachInstance(Class<T> objectClass, long heapOffset) {
+        logger.entry(objectClass.getName(), heapOffset);
+
         validateIsOpen();
 
         try {
             T instance = objectClass.getConstructor().newInstance();
             long size = instance.size();
-            long addr = compositeAllocator.allocate(size);
-            if (addr == -1) {
-                RuntimeException runtimeException = new RuntimeException(new OutOfMemoryError());
-                logger.throwing(runtimeException);
-                throw runtimeException;
+            long addr = heapOffset;
+            if(addr == -1) {
+                addr = compositeAllocator.allocate(size);
+                if (addr == -1) {
+                    RuntimeException runtimeException = new RuntimeException(new OutOfMemoryError());
+                    logger.throwing(runtimeException);
+                    throw runtimeException;
+                }
+            } else {
+                if(compositeAllocator.isFree(addr, size)) {
+                    IllegalArgumentException illegalArgumentException = new IllegalArgumentException();
+                    logger.throwing(illegalArgumentException);
+                    throw illegalArgumentException;
+                }
             }
-            // there is a window here where we'll leak the allocated memory if the following operations fail...
+            // there is a window here where we may leak allocated memory if the following operations fail...
             MemorySegment segment = memorySegment.asSlice(addr, size).acquire();
             MemoryOperations memoryOperations = wrapMemory(addr, segment);
             instance.setMemory(memoryOperations);
@@ -158,7 +173,9 @@ public class MemoryHeap {
         MemoryOperations memoryOperations = object.getMemory();
         long heapOffset = memoryOperations.getHeapOffset();
         MemorySegment memorySegment = memoryOperations.getMemorySegment();
-        compositeAllocator.free(heapOffset, memorySegment.byteSize());
+        if(!compositeAllocator.isFree(heapOffset, memorySegment.byteSize())) {
+            compositeAllocator.free(heapOffset, memorySegment.byteSize());
+        }
         memoryOperations.delete();
 
         logger.exit();

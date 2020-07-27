@@ -12,6 +12,8 @@
  */
 package com.redhat.mashona.pobj.transaction.events;
 
+import java.util.Objects;
+
 /**
  * Transaction log entry for recording memory allocation operations.
  *
@@ -47,5 +49,20 @@ public class MallocEvent implements TransactionEvent {
 
     public boolean isForInternalUse() {
         return forInternalUse;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MallocEvent that = (MallocEvent) o;
+        return offset == that.offset &&
+                size == that.size &&
+                forInternalUse == that.forInternalUse;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(offset, size, forInternalUse);
     }
 }
