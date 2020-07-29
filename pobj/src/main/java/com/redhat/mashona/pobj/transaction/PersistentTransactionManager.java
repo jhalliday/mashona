@@ -15,8 +15,10 @@ package com.redhat.mashona.pobj.transaction;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
+import java.util.List;
+
 /**
- * A logged (i.e. fault-tolerant) transaction.
+ * A factory for logged (i.e. fault-tolerant) transactions.
  *
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
  * @since 2020-07
@@ -45,6 +47,25 @@ public class PersistentTransactionManager extends TransactionManager {
         logger.entry();
 
         currentTransaction = new PersistentTransaction(transactionStore);
+
+        logger.exit();
+    }
+
+    /**
+     * Recover the transactions from the store, bringing the state of the heap back to a consistent point.
+     *
+     * @param transactionalMemoryHeap The heap against which to apply the transactional changes.
+     */
+    public void recover(TransactionalMemoryHeap transactionalMemoryHeap) {
+        logger.entry(transactionalMemoryHeap);
+
+        List<PersistentTransaction> persistentTransactionList = transactionStore.read();
+
+        for (PersistentTransaction persistentTransaction : persistentTransactionList) {
+            currentTransaction = new VolatileTransaction();
+            persistentTransaction.recover(transactionalMemoryHeap);
+            currentTransaction = null;
+        }
 
         logger.exit();
     }

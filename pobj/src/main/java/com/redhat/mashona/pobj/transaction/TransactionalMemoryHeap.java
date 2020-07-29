@@ -47,9 +47,9 @@ public class TransactionalMemoryHeap extends MemoryHeap {
      * Create a new heap abstraction over a given file, with memory use tracking as provided by the allocator
      * and transaction tracking provided by the transaction manager.
      *
-     * @param file The backing file for persistent storage.
-     * @param length The size in bytes of the memory region. Care should be taken that this is at least as big
-     *               as that configured for the provide allocator.
+     * @param file               The backing file for persistent storage.
+     * @param length             The size in bytes of the memory region. Care should be taken that this is at least as big
+     *                           as that configured for the provide allocator.
      * @param compositeAllocator The memory use bookkeeping object.
      * @param transactionManager The transaction coordination service to use.
      * @throws IOException if memory mapping of the file fails.

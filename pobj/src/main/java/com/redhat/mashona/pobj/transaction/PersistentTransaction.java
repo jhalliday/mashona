@@ -77,4 +77,34 @@ public class PersistentTransaction extends VolatileTransaction {
 
         logger.exit();
     }
+
+    /**
+     * Recover the transaction, bringing the state of the heap back to a consistent point.
+     *
+     * @param transactionalMemoryHeap The heap against which to apply the transactional changes.
+     */
+    public void recover(TransactionalMemoryHeap transactionalMemoryHeap) {
+        logger.entry(transactionalMemoryHeap);
+
+        TransactionEvent lastEntry = events.get(events.size() - 1);
+        if (lastEntry instanceof OutcomeEvent && ((OutcomeEvent) lastEntry).isCommit()) {
+            redo(transactionalMemoryHeap);
+        } else {
+            undo(transactionalMemoryHeap);
+        }
+
+        logger.exit();
+    }
+
+    void redo(TransactionalMemoryHeap transactionalPmemHeap) {
+        for (TransactionEvent transactionEvent : events) {
+            if (transactionEvent instanceof MallocEvent) {
+                MallocEvent mallocTxEntry = (MallocEvent) transactionEvent;
+                transactionalPmemHeap.getTransactionalCompositeAllocator().redo(mallocTxEntry);
+            } else if (transactionEvent instanceof DeallocateEvent) {
+                DeallocateEvent deleteTxEntry = (DeallocateEvent) transactionEvent;
+                transactionalPmemHeap.getTransactionalCompositeAllocator().redo(deleteTxEntry);
+            }
+        }
+    }
 }
