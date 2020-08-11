@@ -1,14 +1,15 @@
-# Mashona logwriting module Notes.
+# Mashona logwriting module.
 
-For top-level overview, read ../README.md first
+For a top-level overview, start with the project's [README](../README.md) before continuing here.
 
-# Append-Only Log notes
+This logwriting module provides pure Java binary log implementations designed specifically for use on persistent memory devices.
+
 The binary append-only log is a key data structure for many use cases, including databases and message queues.
-This document covers some of the design decisions applicable to mashona's implementation(s) and highlights key points where caution is necessary for users.
+This document covers some of the design decisions applicable to mashona's implementations and highlights key points where caution is necessary for users.
 
 ## Building blocks
 Like all pmem backed abstractions, the append-only log must be built on MappedByteBuffer, since that's how the Java runtime exposes pmem to the programmer.
-MappedByteBuffer's persistence guarantees on pmem are weak. Specifically, arbitrary writes and not persistence atomic.
+MappedByteBuffer's persistence atomicity guarantees under failure cases on pmem are weak. Specifically, arbitrary writes and not persistence atomic.
 This necessitates adding metadata such as flags or checksums to make data writes survive power failures cleanly,
 a detail which log implementations should mask from their users.
 
@@ -18,14 +19,14 @@ So, how to wrap an unreliable MappedByteBuffer in a reliable log-like interface?
 The AppendOnlyLog interface provides a log abstraction suitable for green-field application implementations that will run only on pmem.
 It aims to provide an elegant, minimal API that allows for an efficient implementation.
 
-Abstractly, the conceptual design is a list of records (ByteBuffers), which can be appended to, iterated over, or deleted.
+Abstractly, the conceptual design is a list of records (ByteBuffers), which can be appended to, iterated over, or deleted in bulk.
 
 This conspicuously excludes many features. Note there is no record numbering or indexed read access.
 
 The minimalism of the API allows flexibility in the implementation.
 For example, the nature and location of metadata is not exposed to the user.
 These library implementation details can be changed to allow optimal performance, without requiring changes to user's code.
-e.g. In the future, record write-completion flags may be used in place of checksums, as the internal structure of the log is not exposed.
+e.g. in the future, record write-completion flags may be used in place of checksums, as the internal structure of the log is not exposed.
 Or, records may be padded to hardware block boundaries, trading space for time.
 Though that one actually is user visible, explicitly offered as a configuration tuning parameter.
 
@@ -33,7 +34,9 @@ Though that one actually is user visible, explicitly offered as a configuration 
 Despite the minimal API, the abstraction still requires some care to use correctly.
 Most essential, the starting location in memory must be correctly aligned to the underlying hardware.
 
-For performance and simplicity, the implementation relies on 8 byte aligned writes being persisence atomic. When calculating where to put these, it further assumes that the base of the provided buffer is aligned.
+For performance and simplicity, the implementation relies on 8 byte aligned writes being persistence atomic. This guarantee, provided by the hardware, is less powerful than the block-level persistence offered by kernel-mediated file systems writes.
+
+When calculating where to put data, the log further assumes that the base of the provided buffer is aligned.
 Writes to pmem are persistence atomic only at the hardware instruction level - putLong as single 8 byte write instruction is fine, two 4 byte writes are not.
 MappedByteBuffer's internal implementation will do the right thing and execute aligned writes as a single instruction, so that just leaves the problem of ensuring the buffer is aligned.
 
@@ -41,7 +44,7 @@ MappedByteBuffer's internal implementation will do the right thing and execute a
 
 The user can select the write ordering semantics they require, trading weakened guarantees for greater performance.
 An append-only log traditionally provided strict write order as a consequence of an implementation detail:
-To minimise expensize HDD head seeks, writes were always strictly serial.
+To minimise expensive HDD head seeks, writes were always strictly serial.
 However, this is unnecessarily limiting to modern storage devices (e.g. SSD and pmem) which have considerable internal concurrency.
 
 Therefore, the log makes it possible to only reserve the required space with a sequential (mutexed) operation, then
@@ -49,6 +52,8 @@ write the actual record content concurrently. This may be appropriate where writ
 respect to one another, but need not be with respect to writes from other Threads. The write API is unchanged,
 as only the internal locking is affected.
 For reads, the iterator will detect and skip partial or missing records resulting from later records having been completely flushed whilst earlier ones were not.
+Alternatively, each Thread could be provided with its own log instance, avoiding lock contention at the software level entirely.
+Note however that persistent memory hardware may have internal concurrency less than the number of Threads a modern CPU can support and that CPU caches may also be placed under pressure by too many concurrent streams.
 
 ## MappedFileChannel
 
@@ -122,7 +127,7 @@ Here we hit the first integration hurdles:
 
 Artemis must both build and run on older JDK releases that don't support pmem.
 To achieve this, the library bundles a Utility class that is compiled to Java8 bytecode and uses reflection
-to access the Java14 classes for the log implementation if the platform supports it. This allows user to to
+to access the Java 14 classes for the log implementation if the platform supports it. This allows users to
 adopt the following idiom:
 
 ```

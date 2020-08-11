@@ -38,20 +38,21 @@ e.g. the log, heap and transaction elements from libpmemobj (and llpl/pcj via JN
 
 The log is the first abstraction we add in Java, since it's the most useful for our immediate use cases. Other parts may follow.
 
-Details of the log design and notes on its usage can be found in [log_notes.md](logwriting/README.md)
+Details of the log design and notes on its usage can be found in the [logwriting](logwriting/) module.
+Experiments with persistent objects are discussed in the [pobj](pobj/) module.
+The docs directory, despite the misleading name, actually contains the project blog. Blame github-pages for that one...
 
 ## Try it out
 
-As of September 2019, the JDK 14 dev tree has the patches for JEP-352 merged in, so JDK builds from this time are suitable for experimenting with pmem.
-Try e.g. https://builds.shipilev.net/openjdk-jdk/openjdk-jdk-latest-linux-x86-release.tar.xz
+As of Java 14 the changes from JEP-352 are available, so Java versions from this time onward are suitable for experimenting with persistent memory.
 
-Install the JDK, then edit pom.xml to change the jdk.dir property to point at this JDK.
+Install the JDK, then edit the mashona pom.xml to change the jdk.dir property to point at this JDK.
 
 Then you need some persistent memory, or fake it with mmapped DRAM.
 See the 'Experimenting without NVDIMMs' section of <https://developers.redhat.com/blog/2016/12/05/configuring-and-using-persistent-memory-rhel-7-3/>
 for how to configure the kernel to mmap a chunk of RAM to simulate pmem.
 
-Edit pom.xml to change the pmem.test.dir property to point at a directory on your pmem mount.
+Edit the pom.xml again, to change the pmem.test.dir property to point at a directory on your pmem mount.
 
 Now you can build and run as usual:
 
@@ -69,14 +70,14 @@ However, this leaves a lot of performance untapped, as the hardware path is now 
 'pmem aware' applications. Software changes that allow for detection and optimized use of pmem hardware for storage when available, whilst remaining able to run on legacy storage.
 This is the current sweet spot, requiring only modest code changes to gain further substantial performance benefits.
 This is the use case that the AppendOnlyLog and MappedFileChannel target.
-By removing the kernel msync/fsync call from the critical path, greater performance is achieved for the write path.
+By using DAX to remove the kernel msync/fsync call from the critical path, greater performance is achieved for the write path.
 
 'pmem native' applications. With more extensive work, applications can place advanced data structures directly on pmem, gaining even greater performance benefits, particularly to recovery time after startup.
 This is an active research area. Java's [Project Panama](https://openjdk.java.net/projects/panama/) is relevant here, as is more experimental Oracle labs work to make Java Objects natively persistent.
 Third party efforts in this direction include e.g. [Espresso](https://arxiv.org/abs/1710.09968) and [AutoPersist](https://dl.acm.org/citation.cfm?id=3314221.3314608).
 
-The PCJ library aims at this space, providing a high level persistent collections library.
-It's layered on a lower level model of persistent heap allocations, provided by libpmemobj via JNI.
+The [PCJ](https://github.com/pmem/pcj) library also aims at this space, providing a high level persistent collections library.
+It's layered on a lower level model of persistent heap allocations, provided by [PMDK's](https://github.com/pmem/pmdk) libpmemobj via JNI.
 The primitives for memory management and transactions currently provided by libpmemobj would need to be recreated in pure Java,
 at which point the JNI layer of PCJ/LLPL could be replaced whilst the Java layer above remained, providing a clean migration path.
 
@@ -96,5 +97,7 @@ This project therefore has two objectives:
 
 Firstly, to provide stable, performant, production quality library of abstractions for pmem aware applications,
 with the initial focus on Java middleware such as databases and message queues.
+At present the [logwriting](logwriting/README.md) module addresses this.
 
 Secondly, to provide more experimental high level abstractions for pmem native coding.
+At present these are in the [pobj](pobj/README.md) module.
