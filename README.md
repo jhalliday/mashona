@@ -40,7 +40,7 @@ The log is the first abstraction we add in Java, since it's the most useful for 
 
 Details of the log design and notes on its usage can be found in the [logwriting](logwriting/) module.
 Experiments with persistent objects are discussed in the [pobj](pobj/) module.
-The docs directory, despite the misleading name, actually contains the project blog. Blame github-pages for that one...
+There is also a project [web site](https://jhalliday.github.io/mashona/) with occasionally interesting blogs.
 
 ## Try it out
 
@@ -97,7 +97,7 @@ This project therefore has two objectives:
 
 Firstly, to provide stable, performant, production quality library of abstractions for pmem aware applications,
 with the initial focus on Java middleware such as databases and message queues.
-At present the [logwriting](logwriting/README.md) module addresses this.
+At present the [logwriting](logwriting/) module addresses this.
 
 Secondly, to provide more experimental high level abstractions for pmem native coding.
-At present these are in the [pobj](pobj/README.md) module.
+At present these are in the [pobj](pobj/) module.
