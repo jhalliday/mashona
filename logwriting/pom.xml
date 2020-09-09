@@ -28,12 +28,11 @@
         <maven.compiler.source>14</maven.compiler.source>
         <maven.compiler.target>14</maven.compiler.target>
 
-        <junit.version>5.4.0</junit.version>
-        <byteman.version>4.0.10</byteman.version>
-        <jmh.version>1.21</jmh.version>
+        <junit.version>5.6.2</junit.version>
+        <byteman.version>4.0.13</byteman.version>
 
         <!-- You need a jdk14 or later to build. -->
-        <jdk.dir>/usr/local/openjdk-14</jdk.dir>
+        <jdk.dir>/usr/local/jdk-14.0.2</jdk.dir>
         <maven.compiler.executable>${jdk.dir}/bin/javac</maven.compiler.executable>
 
         <!-- for running tests, change to point to a directory that is on a pmem DAX mountpoint -->
@@ -191,13 +190,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.26</version>
+            <version>1.7.30</version>
         </dependency>
         <!-- https://www.slf4j.org/extensions.html -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-ext</artifactId>
-            <version>1.7.26</version>
+            <version>1.7.30</version>
         </dependency>
         <!-- https://logback.qos.ch/ -->
         <dependency>
