@@ -222,6 +222,8 @@ public class MappedFileChannelMetadata implements Closeable {
 
             persistenceHandle.persist(0, MAGIC_HEADER.length);
             buffer.position(0);
+
+            persistenceIndex = buffer.getInt(MAGIC_HEADER.length);
         } finally {
             lock.unlock();
         }
