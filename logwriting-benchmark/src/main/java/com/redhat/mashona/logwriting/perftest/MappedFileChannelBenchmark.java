@@ -37,7 +37,7 @@ public class MappedFileChannelBenchmark {
     private static final int length = 1024 * 1024 * 512;
     private static final byte[] data = new byte[1801];
 
-    MappedFileChannel mappedFileChannel;
+    private MappedFileChannel mappedFileChannel;
 
     @State(Scope.Thread)
     @AuxCounters(AuxCounters.Type.OPERATIONS)
