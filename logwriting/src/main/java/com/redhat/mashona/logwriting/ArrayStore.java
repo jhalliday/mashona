@@ -102,4 +102,9 @@ public interface ArrayStore {
      * @param force     if the change should be immediately persistent or not.
      */
     void clear(int slotIndex, boolean scrub, boolean force) throws IOException;
+
+    /**
+     * Close the store, preventing subsequent reads and writes.
+     */
+    void close() throws IOException;
 }

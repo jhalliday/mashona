@@ -12,17 +12,23 @@
  */
 package com.redhat.mashona.logwriting;
 
+import jdk.nio.mapmode.ExtendedMapMode;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import sun.misc.Unsafe;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.CRC32C;
 
 /**
@@ -39,6 +45,19 @@ public class ArrayStoreImpl implements ArrayStore {
 
     private static final XLogger logger = XLoggerFactory.getXLogger(ArrayStoreImpl.class);
 
+    private static Unsafe unsafe;
+
+    static {
+        // ugliness required for close, until the JDK's unmapping behavior is fixed.
+        try {
+            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            unsafe = (Unsafe) f.get(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static final int BLOCK_SIZE = 256; // pmem hardware block
     private static final int RECORD_METADATA_SIZE = 2 * Integer.BYTES; // one int for size field and one for checksum
     private static final byte[] ZERO_ARRAY = new byte[0];
@@ -47,6 +66,11 @@ public class ArrayStoreImpl implements ArrayStore {
     private final int numberOfSlots;
     private final int slotDataCapacity;
     private final int slotSize;
+
+    // this lock guards the open/closed state of the mmap, NOT the data.
+    // Therefore a read or write of data needs only a shared READ lock,
+    // whilst a close() needs an exclusive WRITE lock.
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private final FileChannel fileChannel;
     private final MappedByteBuffer dataBuffer;
@@ -78,7 +102,7 @@ public class ArrayStoreImpl implements ArrayStore {
                         StandardOpenOption.WRITE,
                         StandardOpenOption.CREATE));
 
-        dataBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, length);
+        dataBuffer = fileChannel.map(ExtendedMapMode.READ_WRITE_SYNC, 0, length);
 
         // force MUST be called on the original buffer, NOT a duplicate or slice,
         // so we need to keep a handle on it. However, we don't want to inadvertently
@@ -111,36 +135,63 @@ public class ArrayStoreImpl implements ArrayStore {
      * {@inheritDoc}
      */
     @Override
+    public void close() throws IOException {
+        logger.entry();
+
+        lock.writeLock().lock();
+
+        try {
+            unsafe.invokeCleaner(dataBuffer);
+            fileChannel.close();
+        } finally {
+            lock.writeLock().unlock();
+        }
+
+        logger.exit();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void write(int slotIndex, ByteBuffer src, boolean force) throws IOException {
         logger.entry(this, slotIndex, src, force);
 
         validateIndex(slotIndex);
 
-        int dataSize = src.remaining();
-        if (dataSize > slotDataCapacity) {
-            IOException e = new IOException("data of size " + dataSize + " too big for slot of size " + slotDataCapacity);
-            logger.throwing(e);
-            throw e;
-        }
-        int position = slotIndex * slotSize;
+        lock.readLock().lock();
 
-        ByteBuffer srcSlice = src.duplicate().position(src.position()).limit(src.position() + dataSize).duplicate();
-        // JDK-14: ByteBuffer srcSlice = src.slice(src.position(), length);
-        ByteBuffer dst = dataBuffer.duplicate().position(position).limit(position + slotSize).duplicate();
-        // JDK-14: ByteBuffer dst = dataBuffer.slice(position, length);
+        try {
+            validateIsOpen();
 
-        CRC32C crc32c = new CRC32C();
-        crc32c.update(srcSlice);
-        int checksum = (int) crc32c.getValue();
-        // the checksum above consumed the content, but the put below needs to re-read it.
-        srcSlice.rewind();
+            int dataSize = src.remaining();
+            if (dataSize > slotDataCapacity) {
+                IOException e = new IOException("data of size " + dataSize + " too big for slot of size " + slotDataCapacity);
+                logger.throwing(e);
+                throw e;
+            }
+            int position = slotIndex * slotSize;
 
-        dst.putInt(dataSize);
-        dst.putInt(checksum);
-        dst.put(srcSlice);
+            ByteBuffer srcSlice = src.duplicate().position(src.position()).limit(src.position() + dataSize).duplicate();
+            // JDK-14: ByteBuffer srcSlice = src.slice(src.position(), length);
+            ByteBuffer dst = dataBuffer.duplicate().position(position).limit(position + slotSize).duplicate();
+            // JDK-14: ByteBuffer dst = dataBuffer.slice(position, length);
 
-        if (force) {
-            persistenceHandle.persist(position, dataSize + RECORD_METADATA_SIZE);
+            CRC32C crc32c = new CRC32C();
+            crc32c.update(srcSlice);
+            int checksum = (int) crc32c.getValue();
+            // the checksum above consumed the content, but the put below needs to re-read it.
+            srcSlice.rewind();
+
+            dst.putInt(dataSize);
+            dst.putInt(checksum);
+            dst.put(srcSlice);
+
+            if (force) {
+                persistenceHandle.persist(position, dataSize + RECORD_METADATA_SIZE);
+            }
+        } finally {
+            lock.readLock().unlock();
         }
 
         logger.exit();
@@ -159,8 +210,6 @@ public class ArrayStoreImpl implements ArrayStore {
      */
     @Override
     public ByteBuffer readAsByteBuffer(int slotIndex) throws IOException {
-        validateIndex(slotIndex);
-
         byte[] data = readAsByteArray(slotIndex);
         if (data != null) {
             return ByteBuffer.wrap(data);
@@ -178,31 +227,40 @@ public class ArrayStoreImpl implements ArrayStore {
 
         validateIndex(slotIndex);
 
-        int position = slotIndex * slotSize;
-
-        ByteBuffer recordBuffer = dataBuffer.duplicate();
-        recordBuffer.position(position);
-
-        int payloadLength = recordBuffer.getInt();
-        if (payloadLength == 0) {
-            return null;
-        }
-
-        int expectedChecksum = recordBuffer.getInt();
-        ByteBuffer payloadBuffer = recordBuffer.slice();
-        payloadBuffer.limit(payloadLength);
-        recordBuffer.position(recordBuffer.position() + payloadLength);
-
-        CRC32C crc32c = new CRC32C();
-        crc32c.reset();
-        crc32c.update(payloadBuffer); // this advances the src buffers position to its limit.
-        int actualChecksum = (int) crc32c.getValue();
-        payloadBuffer.rewind();
-
         byte[] result = null;
-        if (actualChecksum == expectedChecksum) {
-            result = new byte[payloadLength];
-            payloadBuffer.get(result);
+
+        lock.readLock().lock();
+
+        try {
+            validateIsOpen();
+
+            int position = slotIndex * slotSize;
+
+            ByteBuffer recordBuffer = dataBuffer.duplicate();
+            recordBuffer.position(position);
+
+            int payloadLength = recordBuffer.getInt();
+            if (payloadLength == 0) {
+                return null;
+            }
+
+            int expectedChecksum = recordBuffer.getInt();
+            ByteBuffer payloadBuffer = recordBuffer.slice();
+            payloadBuffer.limit(payloadLength);
+            recordBuffer.position(recordBuffer.position() + payloadLength);
+
+            CRC32C crc32c = new CRC32C();
+            crc32c.reset();
+            crc32c.update(payloadBuffer); // this advances the src buffers position to its limit.
+            int actualChecksum = (int) crc32c.getValue();
+            payloadBuffer.rewind();
+
+            if (actualChecksum == expectedChecksum) {
+                result = new byte[payloadLength];
+                payloadBuffer.get(result);
+            }
+        } finally {
+            lock.readLock().unlock();
         }
 
         logger.exit(result);
@@ -216,13 +274,22 @@ public class ArrayStoreImpl implements ArrayStore {
     public void clear(int slotIndex, boolean scrub, boolean force) throws IOException {
         logger.entry(this, slotIndex, scrub, force);
 
-        if (scrub) {
-            // this is not very efficient, but will do for now.
-            byte[] data = new byte[slotDataCapacity];
-            write(0, data, true);
-        }
+        lock.readLock().lock();
 
-        write(slotIndex, ZERO_ARRAY, force);
+        try {
+            validateIsOpen();
+
+            if (scrub) {
+                // this is not very efficient, but will do for now.
+                byte[] data = new byte[slotDataCapacity];
+                write(slotIndex, data, true);
+            }
+
+            write(slotIndex, ZERO_ARRAY, force);
+
+        } finally {
+            lock.readLock().unlock();
+        }
 
         logger.exit();
     }
@@ -232,6 +299,14 @@ public class ArrayStoreImpl implements ArrayStore {
             ArrayIndexOutOfBoundsException e = new ArrayIndexOutOfBoundsException(slotIndex);
             logger.throwing(e);
             throw e;
+        }
+    }
+
+    private void validateIsOpen() throws ClosedChannelException {
+        if (!fileChannel.isOpen()) {
+            ClosedChannelException closedChannelException = new ClosedChannelException();
+            logger.throwing(closedChannelException);
+            throw closedChannelException;
         }
     }
 

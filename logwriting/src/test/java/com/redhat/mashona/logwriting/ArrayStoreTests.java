@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -134,5 +135,18 @@ public class ArrayStoreTests {
     public void testIndexOutOfBounds() throws IOException {
         assertThrows(ArrayIndexOutOfBoundsException.class, () -> arrayStore.readAsByteArray(-1));
         assertThrows(ArrayIndexOutOfBoundsException.class, () -> arrayStore.readAsByteArray(NUMBER_OF_SLOTS));
+    }
+
+    @Test
+    public void testClosing() throws IOException {
+
+        byte[] data = new byte[]{1};
+        arrayStore.write(0, data);
+
+        arrayStore.close();
+
+        assertThrows(ClosedChannelException.class, () -> arrayStore.write(0, data));
+        assertThrows(ClosedChannelException.class, () -> arrayStore.readAsByteArray(0));
+        assertThrows(ClosedChannelException.class, () -> arrayStore.clear(0, false));
     }
 }
