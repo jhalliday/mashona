@@ -33,7 +33,7 @@
         <jmh.version>1.25.2</jmh.version>
 
         <!-- You need a jdk14 or later to build. -->
-        <jdk.dir>/usr/local/jdk-14.0.2</jdk.dir>
+        <jdk.dir>/usr/local/jdk-15</jdk.dir>
         <maven.compiler.executable>${jdk.dir}/bin/javac</maven.compiler.executable>
     </properties>
 

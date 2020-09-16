@@ -33,7 +33,7 @@
         <jmh.version>1.21</jmh.version>
 
         <!-- You need a jdk14 or later to build. -->
-        <jdk.dir>/usr/local/openjdk-14</jdk.dir>
+        <jdk.dir>/usr/local/jdk-15</jdk.dir>
         <maven.compiler.executable>${jdk.dir}/bin/javac</maven.compiler.executable>
 
         <!-- for running tests, change to point to a directory that is on a pmem DAX mountpoint -->
