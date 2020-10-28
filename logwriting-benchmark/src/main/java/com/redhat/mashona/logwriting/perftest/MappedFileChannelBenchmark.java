@@ -32,10 +32,14 @@ import java.util.Arrays;
 @State(Scope.Benchmark)
 public class MappedFileChannelBenchmark {
 
-    private static File file = new File("/mnt/pmem/test/MappedFileChannelBenchmark");
+    private static File file = new File(System.getenv("PMEM_TEST_DIR"), "MappedFileChannelBenchmark");
 
     private static final int length = 1024 * 1024 * 512;
-    private static final byte[] data = new byte[1801];
+
+    @Param({"1801"})
+    public int dataSize;
+
+    private byte[] data;
 
     private MappedFileChannel mappedFileChannel;
 
@@ -55,6 +59,8 @@ public class MappedFileChannelBenchmark {
 
     @Setup(Level.Iteration)
     public void setUp() throws IOException {
+
+        data = new byte[dataSize];
 
         deleteFile();
 

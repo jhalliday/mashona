@@ -33,11 +33,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 @State(Scope.Benchmark)
 public class ArrayStoreBenchmark {
 
-    private static File file = new File("/mnt/pmem/test/ArrayStoreBenchmark");
-
-    private static final byte[] data = new byte[1801];
+    private static File file = new File(System.getenv("PMEM_TEST_DIR"), "ArrayStoreBenchmark");
 
     private ArrayStore arrayStore;
+
+    @Param({"1801"})
+    public int dataSize;
+
+    private byte[] data;
 
     private void deleteFile() {
         if (file.exists()) {
@@ -53,6 +56,8 @@ public class ArrayStoreBenchmark {
 
     @Setup(Level.Iteration)
     public void setUp() throws IOException {
+
+        data = new byte[dataSize];
 
         deleteFile();
 

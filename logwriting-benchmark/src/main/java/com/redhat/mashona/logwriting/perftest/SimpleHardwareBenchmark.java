@@ -12,13 +12,12 @@
  */
 package com.redhat.mashona.logwriting.perftest;
 
-import com.redhat.mashona.logwriting.AppendOnlyLog;
-import com.redhat.mashona.logwriting.AppendOnlyLogImpl;
 import jdk.nio.mapmode.ExtendedMapMode;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.openjdk.jmh.runner.options.TimeValue;
 import sun.misc.Unsafe;
 
 import java.io.File;
@@ -30,15 +29,16 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * JMH benchmarking code for writing to an AppendOnlyLog.
+ * JMH benchmarking code for writing to a MappedByteBuffer.
  *
  * @author Jonathan Halliday (jonathan.halliday@redhat.com)
- * @since 2020-09
+ * @since 2020-10
  */
 @State(Scope.Benchmark)
-public class AppendOnlyLogBenchmark {
+public class SimpleHardwareBenchmark {
 
     static Unsafe unsafe;
 
@@ -52,28 +52,14 @@ public class AppendOnlyLogBenchmark {
         }
     }
 
-    private static File file = new File(System.getenv("PMEM_TEST_DIR"), "AppendOnlyLogBenchmark");
+    private static File file = new File(System.getenv("PMEM_TEST_DIR"), "SimpleHardwareBenchmark");
 
-    private static final int length = 1024 * 1024 * 512;
+    private static final int length = 1024 * 1024 * 100;
 
     private FileChannel fileChannel;
     private MappedByteBuffer mappedByteBuffer;
-    private AppendOnlyLog appendOnlyLog;
 
-    @Param({"1801"})
-    public int dataSize;
-
-    @Param({"false", "true"})
-    public boolean blockPadding;
-
-    private byte[] data;
-
-    @State(Scope.Thread)
-    @AuxCounters(AuxCounters.Type.OPERATIONS)
-    public static class OpCounters {
-        public long write;
-        public long reset;
-    }
+    private static final byte[] data = new byte[1024*1024*10];
 
     private void deleteFile() {
         if (file.exists()) {
@@ -86,8 +72,6 @@ public class AppendOnlyLogBenchmark {
 
         deleteFile();
 
-        data = new byte[dataSize];
-
         fileChannel = (FileChannel) Files
                 .newByteChannel(file.toPath(), EnumSet.of(
                         StandardOpenOption.READ,
@@ -95,8 +79,7 @@ public class AppendOnlyLogBenchmark {
                         StandardOpenOption.CREATE));
 
         mappedByteBuffer = fileChannel.map(ExtendedMapMode.READ_WRITE_SYNC, 0, length);
-
-        appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, length, blockPadding, false);
+        //mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, length);
 
         Arrays.fill(data, (byte)-1);
     }
@@ -112,26 +95,25 @@ public class AppendOnlyLogBenchmark {
         deleteFile();
     }
 
+    @State(Scope.Thread)
+    public static class ThreadId {
+        public static AtomicInteger idAllocator = new AtomicInteger(0);
+        public final int offset = idAllocator.getAndAdd(1) * data.length;
+    }
+
     @Benchmark()
     @BenchmarkMode(Mode.Throughput)
-    public void writeLog(OpCounters counters) {
-
-        if(appendOnlyLog.tryPut(data)) {
-            counters.write++;
-        } else {
-            synchronized (this) {
-                if(!appendOnlyLog.canAccept(data.length)) {
-                    appendOnlyLog.clear();
-                    counters.reset++;
-                }
-            }
-        }
+    public void writeLog(ThreadId threadId) {
+        mappedByteBuffer.put(threadId.offset, data, 0, data.length);
+        mappedByteBuffer.force(threadId.offset, data.length);
     }
 
     public static void main(String[] args) throws Exception {
         Options opt = new OptionsBuilder()
-                .include(AppendOnlyLogBenchmark.class.getSimpleName())
+                .include(SimpleHardwareBenchmark.class.getSimpleName())
                 .forks(0) // use 0 for debugging in-process
+                .measurementTime(TimeValue.hours(1))
+                .threads(4)
                 .build();
         new Runner(opt).run();
     }
