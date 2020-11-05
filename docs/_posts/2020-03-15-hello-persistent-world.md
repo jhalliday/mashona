@@ -30,5 +30,5 @@ With Persistent Memory, programs seeking the best possible I/O paths must look f
 
 So we come to the point in the story where OpenJDK engineering makes its entrance. For the JVM to be a competitive platform on which to run applications that take advantage of Persistent Memory, it needs to provide built-in support for efficient calls to the cache management instructions.
 
-In the [next blog](https://github.com/jhalliday/mashona/blog/2020/03/16/jep-352), we look at the API and implementation of OpenJDK 14's new support for Persistent Memory, 
+In the [next blog](https://jhalliday.github.io/mashona/blog/2020/03/16/jep-352), we look at the API and implementation of OpenJDK 14's new support for Persistent Memory, 
 [JEP 352: Non-Volatile Mapped Byte Buffers](https://openjdk.java.net/jeps/352)
