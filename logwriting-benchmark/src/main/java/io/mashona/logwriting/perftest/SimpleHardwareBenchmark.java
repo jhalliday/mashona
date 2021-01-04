@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.logwriting.perftest;
+package io.mashona.logwriting.perftest;
 
 import jdk.nio.mapmode.ExtendedMapMode;
 import org.openjdk.jmh.annotations.*;

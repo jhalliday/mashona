@@ -10,10 +10,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.logwriting.perftest;
+package io.mashona.logwriting.perftest;
 
-import com.redhat.mashona.logwriting.AppendOnlyLog;
-import com.redhat.mashona.logwriting.AppendOnlyLogImpl;
+import io.mashona.logwriting.AppendOnlyLog;
+import io.mashona.logwriting.AppendOnlyLogImpl;
 import jdk.nio.mapmode.ExtendedMapMode;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;

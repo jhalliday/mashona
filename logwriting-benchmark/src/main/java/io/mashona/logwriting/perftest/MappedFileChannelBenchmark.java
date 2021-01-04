@@ -10,9 +10,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.logwriting.perftest;
+package io.mashona.logwriting.perftest;
 
-import com.redhat.mashona.logwriting.MappedFileChannel;
+import io.mashona.logwriting.MappedFileChannel;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;

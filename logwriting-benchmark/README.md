@@ -23,10 +23,10 @@ to build the tests. Available tests can be listed:
 ```
 java -jar target/benchmarks.jar -l
 Benchmarks:
-com.redhat.mashona.logwriting.perftest.AppendOnlyLogBenchmark.writeLog
-com.redhat.mashona.logwriting.perftest.ArrayStoreBenchmark.writeLog
-com.redhat.mashona.logwriting.perftest.MappedFileChannelBenchmark.writeLog
-com.redhat.mashona.logwriting.perftest.SimpleHardwareBenchmark.writeLog
+AppendOnlyLogBenchmark.writeLog
+ArrayStoreBenchmark.writeLog
+MappedFileChannelBenchmark.writeLog
+SimpleHardwareBenchmark.writeLog
 ```
 #### Framework configuration
 
