@@ -17,7 +17,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.redhat.mashona</groupId>
+    <groupId>io.mashona</groupId>
     <artifactId>logwriting</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 

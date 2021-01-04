@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.logwriting;
+package io.mashona.logwriting;
 
 import org.jboss.byteman.contrib.bmunit.BMRule;
 import org.jboss.byteman.contrib.bmunit.BMUnitConfig;
@@ -130,8 +130,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_force_0",
             targetClass = "MappedByteBuffer", targetMethod = "force()", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.force();")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.force();")
     public void force() {
         logger.debug("force()");
         // this calls force(from,length), so we don't need to take action here.
@@ -139,8 +139,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_force_1",
             targetClass = "MappedByteBuffer", targetMethod = "force(int,int)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.force($1, $2);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.force($1, $2);")
     public void force(int from, int length) {
         logger.debug("force(from={}, length={})", from, length);
         // this calls writebackMemory(a,l), so we don't need to take action here.
@@ -148,8 +148,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_writebackMemory_0",
             targetClass = "Unsafe", targetMethod = "writebackMemory(long,long)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.writebackMemory($1,$2);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.writebackMemory($1,$2);")
     public void writebackMemory(long address, long length) {
         logger.debug("writebackMemory(address={}, length={})", address, length);
 
@@ -163,8 +163,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_writebackMemory_1",
             targetClass = "Unsafe", targetMethod = "writebackMemory(long,long)", targetLocation = "INVOKE writeback0(long)",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.writebackMemory((Long)$@[1]);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.writebackMemory((Long)$@[1]);")
     public void writebackMemory(long line) {
         logger.debug("writebackMemory(line={})", line);
         // this no longer exists in the jdk13 version of the patch
@@ -173,8 +173,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_putShort_0",
             targetClass = "DirectByteBuffer", targetMethod = "putShort(long,short)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.putShort($1, $2);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.putShort($1, $2);")
     public void putShort(long address, short value) {
         logger.debug("putShort(address={}, value={})", address, value);
 
@@ -188,8 +188,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_putInt_0",
             targetClass = "DirectByteBuffer", targetMethod = "putInt(long,int)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.putInt($this, $1, $2);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.putInt($this, $1, $2);")
     public void putInt(Object buffer, long address, int value) {
         logger.debug("putInt(address={}, value={})", address, value);
 
@@ -204,8 +204,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_putLong_0",
             targetClass = "DirectByteBuffer", targetMethod = "putLong(long,long)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.putLong($1, $2);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.putLong($1, $2);")
     public void putLong(long address, long value) {
         logger.debug("putLong(address={}, value={})", address, value);
 
@@ -219,8 +219,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_putByte_0",
             targetClass = "Unsafe", targetMethod = "putByte(long,byte)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.putByte($1, $2);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.putByte($1, $2);")
     public void putByte(long address, byte value) {
         logger.debug("putByte(address={}, value={})", address, value);
 
@@ -230,8 +230,8 @@ public class ExecutionTracer {
     // caution: updated for jdk.internal.access.foreign.MemorySegmentProxy API change. Won't work on older JDK14 builds, causing tests to break in weird ways.
     @BMRule(name = "trace_mbbConstructor_0",
             targetClass = "DirectByteBuffer", targetMethod = "<init>(int,long,FileDescriptor,Runnable,boolean,MemorySegmentProxy)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.mbbConstructor($1, $2, $3, $4, $5);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.mbbConstructor($1, $2, $3, $4, $5);")
     public void mbbConstructor(int cap, long address, FileDescriptor fd, Runnable unmapper, boolean isSync) {
         if (isSync) {
             logger.debug("MappedByteBuffer<load>(address={}, cap={})", address, cap);
@@ -244,8 +244,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_copyMemory_0",
             targetClass = "Unsafe", targetMethod = "copyMemory(long,long,long)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.copyMemory($1, $2, $3);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.copyMemory($1, $2, $3);")
     public void copyMemory(long srcAddress, long destAddress, long bytes) {
         logger.debug("copyMemory(address={}, bytes={})", destAddress, bytes);
         // this version always calls the other, so we don't need to instrument it.
@@ -253,8 +253,8 @@ public class ExecutionTracer {
 
     @BMRule(name = "trace_copyMemory_1",
             targetClass = "Unsafe", targetMethod = "copyMemory(Object,long,Object,long,long)", targetLocation = "ENTRY",
-            condition = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE != null",
-            action = "com.redhat.mashona.logwriting.ExecutionTracer.INSTANCE.copyMemory($1, $2, $3, $4, $5);")
+            condition = "io.mashona.logwriting.ExecutionTracer.INSTANCE != null",
+            action = "io.mashona.logwriting.ExecutionTracer.INSTANCE.copyMemory($1, $2, $3, $4, $5);")
     public void copyMemory(Object srcBase, long srcOffset, Object destBase, long destOffset, long bytes) {
         logger.debug("copyMemory(address={}, bytes={})", destOffset, bytes);
 

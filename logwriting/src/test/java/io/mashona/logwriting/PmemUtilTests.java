@@ -10,10 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.mashona.logwriting;
+package io.mashona.logwriting;
 
-import com.redhat.mashona.logwriting.MappedFileChannel;
-import com.redhat.mashona.logwriting.PmemUtil;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;

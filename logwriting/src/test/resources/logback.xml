@@ -41,9 +41,9 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="com.redhat.mashona" level="OFF"/>
+    <logger name="io.mashona" level="OFF"/>
 
-    <logger name="com.redhat.mashona.logwriting.ExecutionTracer" level="INFO"/>
+    <logger name="io.mashona.logwriting.ExecutionTracer" level="INFO"/>
 
 </configuration>
 
