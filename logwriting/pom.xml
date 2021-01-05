@@ -18,10 +18,34 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.mashona</groupId>
-    <artifactId>logwriting</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <artifactId>mashona-logwriting</artifactId>
+    <version>1.0.0.Beta1</version>
 
     <name>Mashona Log Writing</name>
+    <description>Persistent Memory support for Java, binary logging module.</description>
+    <url>https://mashona.io/</url>
+
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:git://github.com/jhalliday/mashona.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/jhalliday/mashona.git</developerConnection>
+        <url>https://github.com/jhalliday/mashona</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>jhalliday</id>
+            <name>Jonathan Halliday</name>
+            <organization>Red Hat</organization>
+        </developer>
+    </developers>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -38,6 +62,19 @@
         <!-- for running tests, change to point to a directory that is on a pmem DAX mountpoint -->
         <pmem.test.dir>/mnt/pmem/test</pmem.test.dir>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>jboss-releases-repository</id>
+            <name>JBoss Release Repository</name>
+            <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>jboss-snapshots-repository</id>
+            <name>JBoss Snapshot Repository</name>
+            <url>https://repository.jboss.org/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <build>
 
@@ -105,6 +142,12 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.1.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.8.2</version>
                 </plugin>
 
             </plugins>
