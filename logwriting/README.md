@@ -7,6 +7,16 @@ This logwriting module provides pure Java binary log implementations designed sp
 The binary append-only log is a key data structure for many use cases, including databases and message queues.
 This document covers some of the design decisions applicable to mashona's implementations and highlights key points where caution is necessary for users.
 
+## maven usage
+
+```
+<dependency>
+    <groupId>io.mashona</groupId>
+    <artifactId>mashona-logwriting</artifactId>
+    <version>1.0.0.Beta1</version>
+</dependency>
+```
+
 ## Building blocks
 Like all pmem backed abstractions, the append-only log must be built on MappedByteBuffer, since that's how the Java runtime exposes pmem to the programmer.
 MappedByteBuffer's persistence atomicity guarantees under failure cases on pmem are weak. Specifically, arbitrary writes and not persistence atomic.
