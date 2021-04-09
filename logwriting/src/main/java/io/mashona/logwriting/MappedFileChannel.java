@@ -12,9 +12,9 @@
  */
 package io.mashona.logwriting;
 
+import org.jboss.logging.Logger;
+
 import jdk.nio.mapmode.ExtendedMapMode;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
 import sun.misc.Unsafe;
 
 import java.io.File;
@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class MappedFileChannel extends FileChannel {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(MappedFileChannel.class);
+    private static final Logger logger = Logger.getLogger(MappedFileChannel.class);
 
     private static Unsafe unsafe;
 
@@ -83,12 +83,16 @@ public class MappedFileChannel extends FileChannel {
      * @throws IOException if the mapping cannot be created, such as when the File is on a filesystem that does not support DAX.
      */
     public MappedFileChannel(File file, int length, boolean readSharedMetadata) throws IOException {
-        logger.entry(this, file, length, readSharedMetadata);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with file={0}, length={1}, readSharedMetadata={2}", file, length, readSharedMetadata);
+        }
 
         this.file = file;
 
         if (!file.exists() && getMetadataFile(file).exists()) {
-            logger.trace("deleting orphan metadata for " + file.getAbsolutePath());
+            if(logger.isDebugEnabled()) {
+                logger.debugv("deleting orphan metadata for {0}", file.getAbsolutePath());
+            }
             getMetadataFile(file).delete();
         }
 
@@ -115,7 +119,9 @@ public class MappedFileChannel extends FileChannel {
         metadata = new MappedFileChannelMetadata(getMetadataFile(file), readSharedMetadata);
         dataBuffer.position(0);
 
-        logger.exit(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit {0}", this);
+        }
     }
 
     /**
@@ -135,11 +141,15 @@ public class MappedFileChannel extends FileChannel {
      * @throws IOException if the channel is still open.
      */
     public void deleteMetadata() throws IOException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         if (fileChannel.isOpen()) {
             IOException ioException = new IOException("Unable to delete metadata for an open channel");
-            logger.throwing(ioException);
+            if(logger.isTraceEnabled()) {
+                logger.tracev(ioException, "throwing {0}", ioException.toString());
+            }
             throw ioException;
         }
 
@@ -148,7 +158,9 @@ public class MappedFileChannel extends FileChannel {
             metadata.delete();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
@@ -164,7 +176,9 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public int read(ByteBuffer dst) throws IOException {
-        logger.entry(this, dst);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with dst={1}", this, dst);
+        }
 
         lock.lock();
         int result = 0;
@@ -184,7 +198,9 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -206,7 +222,9 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public int read(ByteBuffer dst, long position) throws IOException {
-        logger.entry(this, dst, position);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with dst={1} and position={2}", this, dst, position);
+        }
 
         lock.lock();
         int result = 0;
@@ -236,7 +254,9 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -252,7 +272,9 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public int write(ByteBuffer src) throws IOException {
-        logger.entry(this, src);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with src={1}", this, src);
+        }
 
         lock.lock();
         int result = 0;
@@ -268,7 +290,9 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -289,7 +313,9 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public int write(ByteBuffer src, long position) throws IOException {
-        logger.entry(this, src, position);
+        if(logger.isTraceEnabled()) {
+            logger.tracev ("entry for {0} with src={1}, position={2}", this, src, position);
+        }
 
         lock.lock();
         int result = 0;
@@ -304,18 +330,28 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
     private int writeInternal(ByteBuffer src, int position) throws ClosedChannelException {
 
         if(metadata.isReadShared()) {
-            throw new IllegalStateException();
+            IllegalStateException illegalStateException = new IllegalStateException();
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalStateException, "throwing {0}", illegalStateException.toString());
+            }
+            throw illegalStateException;
         }
 
         if (position < metadata.getPersistenceIndex()) {
-            throw new IllegalArgumentException();
+            IllegalArgumentException illegalArgumentException = new IllegalArgumentException();
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException.toString());
+            }
+            throw illegalArgumentException;
         }
 
         int length = Math.min(dataBuffer.remaining(), src.remaining());
@@ -345,7 +381,9 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public long position() throws IOException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
         int result = 0;
@@ -358,7 +396,9 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -377,7 +417,9 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public FileChannel position(long newPosition) throws ClosedChannelException, IOException {
-        logger.entry(this, newPosition);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with newPosition={1}", this, newPosition);
+        }
 
         lock.lock();
 
@@ -391,7 +433,9 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit {0}", this);
+        }
         return this;
     }
 
@@ -404,7 +448,9 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public long size() throws IOException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
         long result = 0;
@@ -417,7 +463,9 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -432,12 +480,15 @@ public class MappedFileChannel extends FileChannel {
      * @see #getPersistedSize()
      */
     public long getFileSize() {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         long result = file.length();
 
-        logger.exit(result);
-
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -453,7 +504,9 @@ public class MappedFileChannel extends FileChannel {
      * @see #getFileSize()
      */
     public long getPersistedSize() throws ClosedChannelException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
         long result = 0;
@@ -466,7 +519,9 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -488,7 +543,9 @@ public class MappedFileChannel extends FileChannel {
      * @throws ClosedChannelException if the channel is not open.
      */
     public void clear() throws ClosedChannelException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
         try {
@@ -503,7 +560,9 @@ public class MappedFileChannel extends FileChannel {
             lock.unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     private void clearDataFromOffset(int offset) {
@@ -525,7 +584,9 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     protected void implCloseChannel() throws IOException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
 
@@ -535,7 +596,9 @@ public class MappedFileChannel extends FileChannel {
 
             if(!metadata.isReadShared()) {
                 int persistenceIndex = metadata.getPersistenceIndex();
-                logger.trace("truncating {} to {}", file.getAbsolutePath(), persistenceIndex);
+                if(logger.isDebugEnabled()) {
+                    logger.debugv("truncating file={0} to length={1}", file.getAbsolutePath(), persistenceIndex);
+                }
                 fileChannel.truncate(persistenceIndex);
             }
 
@@ -546,22 +609,30 @@ public class MappedFileChannel extends FileChannel {
         } finally {
             lock.unlock();
         }
-        logger.exit();
+
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     private void validateIsOpen() throws ClosedChannelException {
         if (!fileChannel.isOpen()) {
             ClosedChannelException closedChannelException = new ClosedChannelException();
-            logger.throwing(closedChannelException);
+            if(logger.isTraceEnabled()) {
+                logger.tracev(closedChannelException, "throwing {0}", closedChannelException.toString());
+            }
             throw closedChannelException;
         }
     }
 
     private void validatePosition(long position) throws IndexOutOfBoundsException {
         if (position > dataBuffer.limit()) {
-            IndexOutOfBoundsException e = new IndexOutOfBoundsException("Position " + position + " exceeds limit " + dataBuffer.limit());
-            logger.throwing(e);
-            throw e;
+            IndexOutOfBoundsException indexOutOfBoundsException =
+                    new IndexOutOfBoundsException("Position " + position + " exceeds limit " + dataBuffer.limit());
+            if(logger.isTraceEnabled()) {
+                logger.tracev(indexOutOfBoundsException, "throwing {0}", indexOutOfBoundsException.toString());
+            }
+            throw indexOutOfBoundsException;
         }
     }
 

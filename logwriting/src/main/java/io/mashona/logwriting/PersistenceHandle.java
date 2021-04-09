@@ -12,8 +12,7 @@
  */
 package io.mashona.logwriting;
 
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
+import org.jboss.logging.Logger;
 
 import java.lang.reflect.Field;
 import java.nio.MappedByteBuffer;
@@ -29,7 +28,7 @@ import java.nio.MappedByteBuffer;
  */
 public class PersistenceHandle {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(PersistenceHandle.class);
+    private static final Logger logger = Logger.getLogger(PersistenceHandle.class);
 
     private static Field fdField;
 
@@ -52,7 +51,9 @@ public class PersistenceHandle {
      */
 
     public static void setParanoid(boolean value) throws Exception {
-        logger.entry(value);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with value={0}", value);
+        }
 
         if(value) {
             fdField = MappedByteBuffer.class.getDeclaredField("fd");
@@ -61,7 +62,9 @@ public class PersistenceHandle {
             fdField = null;
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     private final MappedByteBuffer buffer;
@@ -79,7 +82,9 @@ public class PersistenceHandle {
      * @param length the number of bytes in the operational area.
      */
     public PersistenceHandle(MappedByteBuffer buffer, int offset, int length) {
-        logger.entry(buffer, offset, length);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with buffer={0}, offset={1}, length={2}", buffer, offset, length);
+        }
 
         validateBuffer(buffer);
 
@@ -87,7 +92,9 @@ public class PersistenceHandle {
         this.offset = offset;
         this.length = length;
 
-        logger.exit(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit {0}", this);
+        }
     }
 
     private void validateBuffer(MappedByteBuffer buff) {
@@ -102,7 +109,9 @@ public class PersistenceHandle {
 
             if(!ok) {
                 IllegalArgumentException exception = new IllegalArgumentException("Persistence would be ineffective on " + buff);
-                logger.throwing(exception);
+                if(logger.isTraceEnabled()) {
+                    logger.tracev(exception, "throwing {0}", exception.toString());
+                }
                 throw exception;
             }
         }
@@ -110,14 +119,24 @@ public class PersistenceHandle {
 
     // mostly for testing.
     PersistenceHandle duplicate(int offset, int length) {
-        logger.entry(offset, length);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with offset={1}, length={2}", this, offset, length);
+        }
 
         if (length > this.length) {
-            throw new IllegalArgumentException("given length of " + length + " exceeds max of " + this.length);
+            IllegalArgumentException illegalArgumentException =
+                    new IllegalArgumentException("given length of " + length + " exceeds max of " + this.length);
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException.toString());
+            }
+            throw illegalArgumentException;
         }
 
         PersistenceHandle persistenceHandle = new PersistenceHandle(buffer, this.offset + offset, length);
-        logger.exit(persistenceHandle);
+
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", persistenceHandle);
+        }
         return persistenceHandle;
     }
 
@@ -128,25 +147,38 @@ public class PersistenceHandle {
      * @param length the number of bytes.
      */
     public void persist(int from, int length) {
-        logger.entry(this, from, length);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with from={1}, length={2}", this, from, length);
+        }
 
         if (length > this.length) {
-            throw new IllegalArgumentException("given length of " + length + " exceeds max of " + this.length);
+            IllegalArgumentException illegalArgumentException =
+                    new IllegalArgumentException("given length of " + length + " exceeds max of " + this.length);
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException);
+            }
+            throw illegalArgumentException;
         }
 
         buffer.force(from + offset, length);
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
      * Forces any changes made to be written to the persistence domain.
      */
     public void persist() {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         persist(0, length);
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 }

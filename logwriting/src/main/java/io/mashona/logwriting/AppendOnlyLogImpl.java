@@ -12,8 +12,7 @@
  */
 package io.mashona.logwriting;
 
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
+import org.jboss.logging.Logger;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -36,7 +35,7 @@ import java.util.zip.CRC32C;
  */
 public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(AppendOnlyLogImpl.class);
+    private static final Logger logger = Logger.getLogger(AppendOnlyLogImpl.class);
 
     // change this if changing the data layout!
     private static final byte[] MAGIC_HEADER = new String("TRBAOL01").getBytes(StandardCharsets.UTF_8);
@@ -83,7 +82,10 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      * @param linearOrdering true is strict serial ordering of writes is required, false for more relaxed ordering guarantees.
      */
     public AppendOnlyLogImpl(MappedByteBuffer byteBuffer, int offset, int length, boolean blockPadding, boolean linearOrdering) {
-        logger.entry(byteBuffer, offset, length, blockPadding);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with byteBuffer={0}, offset={1}, length={2}, blockPadding={3}",
+                    byteBuffer, offset, length, blockPadding);
+        }
 
         lock.lock();
         try {
@@ -129,7 +131,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             lock.unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit {0}", this);
+        }
     }
 
     /**
@@ -169,7 +173,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public void checkpoint() {
-        logger.entry();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
         try {
@@ -179,7 +185,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             lock.unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
@@ -259,17 +267,22 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public int putWithLocation(ByteBuffer src) {
-        logger.entry(src);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with src={1}", this, src);
+        }
 
         int location = tryPutWithLocation(src);
         if (location == ERROR_LOCATION) {
-            BufferOverflowException e = new BufferOverflowException();
-            logger.throwing(e);
-            throw e;
+            BufferOverflowException bufferOverflowException = new BufferOverflowException();
+            if(logger.isTraceEnabled()) {
+                logger.tracev(bufferOverflowException, "throwing {0}", bufferOverflowException.toString());
+            }
+            throw bufferOverflowException;
         }
 
-        logger.exit(location);
-
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", location);
+        }
         return location;
     }
 
@@ -287,13 +300,17 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public int tryPutWithLocation(ByteBuffer src) {
-        logger.entry(src);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with src={1}", this, src);
+        }
 
         ByteBuffer srcSlice = src.slice();
         int payloadLength = srcSlice.remaining();
 
         if (payloadLength == 0) {
-            logger.exit(ERROR_LOCATION);
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning {0}", ERROR_LOCATION);
+            }
             return ERROR_LOCATION;
         }
 
@@ -319,7 +336,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
         try {
 
             if (!canAcceptInternal(payloadLength)) {
-                logger.exit(ERROR_LOCATION);
+                if(logger.isTraceEnabled()) {
+                    logger.tracev("exit returning {0}", ERROR_LOCATION);
+                }
                 return ERROR_LOCATION;
             }
 
@@ -379,7 +398,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             persistenceHandle.persist(recordStartPosition + recordBytesFittingInFirstCacheLine, deferredRecordBytesLength);
         }
 
-        logger.exit(recordStartPosition);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", recordStartPosition);
+        }
         return recordStartPosition;
     }
 
@@ -388,7 +409,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public void clear() {
-        logger.entry();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
         try {
@@ -445,7 +468,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             lock.unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
@@ -453,7 +478,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public int remaining() {
-        logger.entry();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         int result;
 
@@ -464,7 +491,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -473,7 +502,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public boolean canAccept(int length) {
-        logger.entry(length);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with length={1}", this, length);
+        }
 
         boolean result;
 
@@ -484,7 +515,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             lock.unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -513,7 +546,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      * last valid record.
      */
     private void recoverRecords() {
-        logger.entry();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         int checkpoint = buffer.getInt(CHECKPOINT_OFFSET);
 
@@ -525,7 +560,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
 
         buffer.position(iter.iterBuffer.position());
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
@@ -533,6 +570,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public ByteBuffer readRecordAt(int location) {
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with location={1}", this, location);
+        }
 
         CRC32C crc32c = new CRC32C();
 
@@ -540,8 +580,11 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
         recordBuffer.position(location);
 
         if (recordBuffer.remaining() < 4) {
-            logger.exit();
-            throw new IllegalArgumentException("invalid record location "+location);
+            IllegalArgumentException illegalArgumentException = new IllegalArgumentException("invalid record location "+location);
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException.toString());
+            }
+            throw illegalArgumentException;
         }
 
         int length = recordBuffer.getInt();
@@ -557,7 +600,15 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
         dataBuffer.rewind();
 
         if(actualChecksum != expectedChecksum) {
-            throw new IllegalStateException("invalid checksum");
+            IllegalStateException illegalStateException = new IllegalStateException("invalid checksum");
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalStateException, "throwing {0}", illegalStateException.toString());
+            }
+            throw illegalStateException;
+        }
+
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", dataBuffer);
         }
         return dataBuffer;
     }
@@ -567,11 +618,15 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public Iterator<ByteBuffer> iterator() {
-        logger.entry();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         Iterator<ByteBuffer> result = new Itr(FIRST_RECORD_OFFSET, false);
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -580,11 +635,15 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
      */
     @Override
     public Iterator<ByteBuffer> copyingIterator() {
-        logger.entry();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         Iterator<ByteBuffer> result = new Itr(FIRST_RECORD_OFFSET, true);
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -601,7 +660,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
         private final boolean returnCopies;
 
         private Itr(int offset, boolean returnCopies) {
-            logger.entry();
+            if(logger.isTraceEnabled()) {
+                logger.tracev("entry with offset={0}, returnCopies={1}", offset, returnCopies);
+            }
 
             lock.lock();
             try {
@@ -613,7 +674,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 lock.unlock();
             }
 
-            logger.exit();
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit {0}", this);
+            }
         }
 
         /**
@@ -621,7 +684,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
          */
         @Override
         public boolean hasNext() {
-            logger.entry();
+            if(logger.isTraceEnabled()) {
+                logger.tracev("entry for {0}", this);
+            }
 
             boolean result = false;
 
@@ -645,7 +710,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 lock.unlock();
             }
 
-            logger.exit(result);
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning {0}", result);
+            }
             return result;
         }
 
@@ -661,7 +728,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
          */
         @Override
         public ByteBuffer next() {
-            logger.entry();
+            if(logger.isTraceEnabled()) {
+                logger.tracev("entry for {0}", this);
+            }
 
             ByteBuffer result = null;
 
@@ -671,9 +740,11 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 checkForReset();
 
                 if (!hasNext()) {
-                    NoSuchElementException e = new NoSuchElementException();
-                    logger.throwing(e);
-                    throw e;
+                    NoSuchElementException noSuchElementException = new NoSuchElementException();
+                    if(logger.isTraceEnabled()) {
+                        logger.tracev(noSuchElementException, "throwing {0}", noSuchElementException.toString());
+                    }
+                    throw noSuchElementException;
                 }
 
                 // hasNext did the heavy lifting, but is idempotent, so we still need to update the iterator state
@@ -694,7 +765,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 lock.unlock();
             }
 
-            logger.exit(result);
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning {0}", result);
+            }
             return result;
         }
 
@@ -702,7 +775,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
          * Attempt to read and cache the next log entry.
          */
         private void lookahead() {
-            logger.entry();
+            if(logger.isTraceEnabled()) {
+                logger.tracev("entry for {0}", this);
+            }
 
             int originalPosition = iterBuffer.position();
             ByteBuffer byteBuffer = null;
@@ -712,13 +787,17 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 do {
 
                     if (iterBuffer.remaining() < 4) {
-                        logger.exit();
+                        if(logger.isTraceEnabled()) {
+                            logger.tracev("exit");
+                        }
                         return;
                     }
 
                     int length = iterBuffer.getInt();
                     if (length == 0) {
-                        logger.exit();
+                        if(logger.isTraceEnabled()) {
+                            logger.tracev("exit");
+                        }
                         return;
                     }
                     int expectedChecksum = iterBuffer.getInt();
@@ -741,6 +820,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                     }
 
                     if (isEffectiveLinearOrdering()) {
+                        if(logger.isTraceEnabled()) {
+                            logger.tracev("exit");
+                        }
                         return; // entry is invalid, but we're not configured to skip bad ones
                     }
 
@@ -755,7 +837,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 iterBuffer.position(originalPosition);
             }
 
-            logger.exit();
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit");
+            }
         }
 
         /**
@@ -763,9 +847,12 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
          */
         private void checkForReset() {
             if (epoch != expectedEpoch) {
-                ConcurrentModificationException e = new ConcurrentModificationException();
-                logger.throwing(e);
-                throw e;
+                ConcurrentModificationException concurrentModificationException = new ConcurrentModificationException();
+                if(logger.isTraceEnabled()) {
+                    logger.tracev(concurrentModificationException, "throwing {0}",
+                            concurrentModificationException.toString());
+                }
+                throw concurrentModificationException;
             }
         }
 

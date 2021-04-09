@@ -22,7 +22,6 @@
         <encoder>
             <!-- http://logback.qos.ch/manual/layouts.html -->
             <pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} [%thread] %-5level %logger{36} %M:%L %msg%n</pattern>
-            <pattern>%msg</pattern>
         </encoder>
         <immediateFlush>false</immediateFlush>
     </appender>
@@ -39,9 +38,10 @@
 
     <root level="ALL">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
     </root>
 
-    <logger name="io.mashona" level="OFF"/>
+    <logger name="io.mashona" level="WARN"/>
 
     <logger name="io.mashona.logwriting.ExecutionTracer" level="INFO"/>
 

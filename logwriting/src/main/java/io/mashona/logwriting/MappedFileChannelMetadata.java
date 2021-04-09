@@ -12,9 +12,9 @@
  */
 package io.mashona.logwriting;
 
+import org.jboss.logging.Logger;
+
 import jdk.nio.mapmode.ExtendedMapMode;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
 import sun.misc.Unsafe;
 
 import java.io.Closeable;
@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class MappedFileChannelMetadata implements Closeable {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(MappedFileChannelMetadata.class);
+    private static final Logger logger = Logger.getLogger(MappedFileChannelMetadata.class);
 
     // change this if changing the data layout!
     private static final byte[] MAGIC_HEADER = new String("TRBMFCM1").getBytes(StandardCharsets.UTF_8);
@@ -89,7 +89,9 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws IOException if the mapping fails.
      */
     public MappedFileChannelMetadata(File file, boolean readShared) throws IOException {
-        logger.entry(file, readShared);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with file={0}, readShared={1}", file, readShared);
+        }
 
         fileChannel = (FileChannel) Files
                 .newByteChannel(file.toPath(), EnumSet.of(
@@ -116,7 +118,9 @@ public class MappedFileChannelMetadata implements Closeable {
             clear();
         }
 
-        logger.exit(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit {0}", this);
+        }
     }
 
     /**
@@ -126,7 +130,9 @@ public class MappedFileChannelMetadata implements Closeable {
      */
     @Override
     public void close() throws IOException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
 
@@ -139,7 +145,10 @@ public class MappedFileChannelMetadata implements Closeable {
         } finally {
             lock.unlock();
         }
-        logger.exit();
+
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
@@ -149,7 +158,9 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws ClosedChannelException if the instance has previously been closed.
      */
     public int getPersistenceIndex() throws ClosedChannelException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         int value;
         lock.lock();
@@ -161,7 +172,9 @@ public class MappedFileChannelMetadata implements Closeable {
             lock.unlock();
         }
 
-        logger.exit(value);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", value);
+        }
         return value;
     }
 
@@ -173,7 +186,9 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws ClosedChannelException if the instance has previously been closed.
      */
     public void persist(int startIndex, int length) throws ClosedChannelException {
-        logger.entry(this, startIndex, length);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with startIndex={1}, length={2}", this, startIndex, length);
+        }
 
         lock.lock();
 
@@ -187,7 +202,9 @@ public class MappedFileChannelMetadata implements Closeable {
             lock.unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
@@ -205,7 +222,9 @@ public class MappedFileChannelMetadata implements Closeable {
      * @throws ClosedChannelException if the instance has previously been closed.
      */
     public void clear() throws ClosedChannelException {
-        logger.entry(this);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.lock();
 
@@ -228,12 +247,18 @@ public class MappedFileChannelMetadata implements Closeable {
             lock.unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     private void validateIsOpen() throws ClosedChannelException {
         if(!fileChannel.isOpen()) {
-            throw new ClosedChannelException();
+            ClosedChannelException closedChannelException = new ClosedChannelException();
+            if(logger.isTraceEnabled()) {
+                logger.tracev(closedChannelException, "throwing {0}", closedChannelException.toString());
+            }
+            throw closedChannelException;
         }
     }
 

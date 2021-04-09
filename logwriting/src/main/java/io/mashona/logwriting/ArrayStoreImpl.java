@@ -12,9 +12,9 @@
  */
 package io.mashona.logwriting;
 
+import org.jboss.logging.Logger;
+
 import jdk.nio.mapmode.ExtendedMapMode;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
 import sun.misc.Unsafe;
 
 import java.io.File;
@@ -43,7 +43,7 @@ import java.util.zip.CRC32C;
  */
 public class ArrayStoreImpl implements ArrayStore {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(ArrayStoreImpl.class);
+    private static final Logger logger = Logger.getLogger(ArrayStoreImpl.class);
 
     private static Unsafe unsafe;
 
@@ -87,7 +87,10 @@ public class ArrayStoreImpl implements ArrayStore {
      * @param slotDataCapacity the maximum data storage size of each slot.
      */
     public ArrayStoreImpl(File file, int numberOfSlots, int slotDataCapacity) throws IOException {
-        logger.entry(file, numberOfSlots, slotDataCapacity);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with file={0}, numberOfSlots={1}, slotDataCapacity={2}",
+                    file, numberOfSlots, slotDataCapacity);
+        }
 
         this.file = file;
         this.numberOfSlots = numberOfSlots;
@@ -109,7 +112,9 @@ public class ArrayStoreImpl implements ArrayStore {
         // rely on or change its state, so we wrap it in a restrictive API.
         persistenceHandle = new PersistenceHandle(dataBuffer, 0, length);
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit {0}", this);
+        }
     }
 
     /**
@@ -136,7 +141,9 @@ public class ArrayStoreImpl implements ArrayStore {
      */
     @Override
     public void close() throws IOException {
-        logger.entry();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
 
         lock.writeLock().lock();
 
@@ -147,7 +154,9 @@ public class ArrayStoreImpl implements ArrayStore {
             lock.writeLock().unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
@@ -155,7 +164,9 @@ public class ArrayStoreImpl implements ArrayStore {
      */
     @Override
     public void write(int slotIndex, ByteBuffer src, boolean force) throws IOException {
-        logger.entry(this, slotIndex, src, force);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with slotIndex={1}, src={2}, force={3}", this, slotIndex, src, force);
+        }
 
         validateIndex(slotIndex);
 
@@ -166,9 +177,11 @@ public class ArrayStoreImpl implements ArrayStore {
 
             int dataSize = src.remaining();
             if (dataSize > slotDataCapacity) {
-                IOException e = new IOException("data of size " + dataSize + " too big for slot of size " + slotDataCapacity);
-                logger.throwing(e);
-                throw e;
+                IOException ioException = new IOException("data of size " + dataSize + " too big for slot of size " + slotDataCapacity);
+                if(logger.isTraceEnabled()) {
+                    logger.tracev(ioException, "throwing {0}", ioException.toString());
+                }
+                throw ioException;
             }
             int position = slotIndex * slotSize;
 
@@ -194,7 +207,9 @@ public class ArrayStoreImpl implements ArrayStore {
             lock.readLock().unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     /**
@@ -223,7 +238,9 @@ public class ArrayStoreImpl implements ArrayStore {
      */
     @Override
     public byte[] readAsByteArray(int slotIndex) throws IOException {
-        logger.entry(slotIndex);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with slotIndex={1}", this, slotIndex);
+        }
 
         validateIndex(slotIndex);
 
@@ -241,6 +258,9 @@ public class ArrayStoreImpl implements ArrayStore {
 
             int payloadLength = recordBuffer.getInt();
             if (payloadLength == 0) {
+                if(logger.isTraceEnabled()) {
+                    logger.tracev("exit returning null");
+                }
                 return null;
             }
 
@@ -263,7 +283,9 @@ public class ArrayStoreImpl implements ArrayStore {
             lock.readLock().unlock();
         }
 
-        logger.exit(result);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", result);
+        }
         return result;
     }
 
@@ -272,7 +294,10 @@ public class ArrayStoreImpl implements ArrayStore {
      */
     @Override
     public void clear(int slotIndex, boolean scrub, boolean force) throws IOException {
-        logger.entry(this, slotIndex, scrub, force);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0} with slotIndex={1}, scrub={2}, force={3}",
+                    this, slotIndex, scrub, force);
+        }
 
         lock.readLock().lock();
 
@@ -291,21 +316,27 @@ public class ArrayStoreImpl implements ArrayStore {
             lock.readLock().unlock();
         }
 
-        logger.exit();
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
     }
 
     private void validateIndex(int slotIndex) {
         if (slotIndex < 0 || slotIndex >= numberOfSlots) {
-            ArrayIndexOutOfBoundsException e = new ArrayIndexOutOfBoundsException(slotIndex);
-            logger.throwing(e);
-            throw e;
+            ArrayIndexOutOfBoundsException arrayIndexOutOfBoundsException = new ArrayIndexOutOfBoundsException(slotIndex);
+            if(logger.isTraceEnabled()) {
+                logger.tracev(arrayIndexOutOfBoundsException, "throwing {0}", arrayIndexOutOfBoundsException.toString());
+            }
+            throw arrayIndexOutOfBoundsException;
         }
     }
 
     private void validateIsOpen() throws ClosedChannelException {
         if (!fileChannel.isOpen()) {
             ClosedChannelException closedChannelException = new ClosedChannelException();
-            logger.throwing(closedChannelException);
+            if(logger.isTraceEnabled()) {
+                logger.tracev(closedChannelException, "throwing {0}", closedChannelException.toString());
+            }
             throw closedChannelException;
         }
     }

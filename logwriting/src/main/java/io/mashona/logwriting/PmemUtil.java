@@ -12,8 +12,7 @@
  */
 package io.mashona.logwriting;
 
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
+import org.jboss.logging.Logger;
 
 import java.io.Closeable;
 import java.io.File;
@@ -31,7 +30,7 @@ import java.nio.channels.FileChannel;
  */
 public class PmemUtil {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(PmemUtil.class);
+    private static final Logger logger = Logger.getLogger(PmemUtil.class);
 
     // most classes are built for jdk 14, whereas this class is built for 8,
     // so we want to avoid hard linking or we'll get headaches.
@@ -84,22 +83,32 @@ public class PmemUtil {
      * @return true if pmem is available at the given location, false otherwise
      */
     public static synchronized boolean isPmemSupportedFor(File dir) {
-        logger.entry(dir.getAbsolutePath());
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with dir={0}", dir.getAbsolutePath());
+        }
 
         if (mappedFileChannelConstructor == null) {
-            logger.exit(false);
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning false");
+            }
             return false;
         }
 
         if (!dir.exists()) {
-            IllegalArgumentException e = new IllegalArgumentException("The directory " + dir.getAbsolutePath() + " must exist");
-            logger.throwing(e);
-            throw e;
+            IllegalArgumentException illegalArgumentException =
+                    new IllegalArgumentException("The directory " + dir.getAbsolutePath() + " must exist");
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalArgumentException,"throwing {0}", illegalArgumentException.toString());
+            }
+            throw illegalArgumentException;
         }
         if (!dir.isDirectory()) {
-            IllegalArgumentException e = new IllegalArgumentException(dir.getAbsolutePath() + " must be a directory");
-            logger.throwing(e);
-            throw e;
+            IllegalArgumentException illegalArgumentException =
+                    new IllegalArgumentException(dir.getAbsolutePath() + " must be a directory");
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalArgumentException,"throwing {0}", illegalArgumentException.toString());
+            }
+            throw illegalArgumentException;
         }
 
         File testFile = null;
@@ -109,11 +118,17 @@ public class PmemUtil {
             Closeable mappedFileChannelMetadata = (Closeable) mappedFileChannelMetadataConstructor.newInstance(testFile);
             mappedFileChannelMetadata.close();
 
-            logger.exit(true);
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning true");
+            }
             return true;
         } catch (Exception e) {
-            logger.trace("mmap failed for path {}", dir.getAbsolutePath(), e); // TODO be more specific
-            logger.exit(false);
+            if(logger.isDebugEnabled()) {
+                logger.debugv(e, "mmap failed for path {0}", dir.getAbsolutePath()); // TODO be more specific
+            }
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning false");
+            }
             return false;
         } finally {
             if (testFile != null && testFile.exists()) {
@@ -132,20 +147,28 @@ public class PmemUtil {
      * @return a FileChannel using pmem, or null if pmem is not supported.
      * @throws FileNotFoundException if the file does not exist and create is false.
      */
-    public static FileChannel pmemChannelFor(File file, int length, boolean create, boolean readSharedMetadata) throws FileNotFoundException {
-        logger.entry(file.getAbsolutePath(), create);
+    public static FileChannel pmemChannelFor(File file, int length, boolean create, boolean readSharedMetadata)
+            throws FileNotFoundException {
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with file={0}, length={1}, create={2}, readSharedMetadata={3}",
+                    file.getAbsolutePath(), length, create, readSharedMetadata);
+        }
 
         if (!isPmemSupportedFor(file.getParentFile())) {
-            logger.exit(null);
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning null");
+            }
             return null;
         }
 
         long initialSize = 0;
         if (!create) {
             if (!file.exists()) {
-                FileNotFoundException e = new FileNotFoundException(file.getAbsolutePath());
-                logger.throwing(e);
-                throw e;
+                FileNotFoundException fileNotFoundException = new FileNotFoundException(file.getAbsolutePath());
+                if(logger.isTraceEnabled()) {
+                    logger.tracev(fileNotFoundException,"throwing {0}", fileNotFoundException.toString());
+                }
+                throw fileNotFoundException;
             } else {
                 initialSize = file.length();
             }
@@ -158,14 +181,18 @@ public class PmemUtil {
         } catch (Exception e) {
             // as long as the isPmemSupportedFor works this should not happen, but...
             // if the mapping fails after it has already expanded the file to the required size, there is a mess to clean up
-            logger.debug("pmem mapping failed for {}. File may need truncation.", file.getAbsolutePath(), e);
+            if(logger.isDebugEnabled()) {
+                logger.debugv(e, "pmem mapping failed for {0}. File may need truncation.", file.getAbsolutePath());
+            }
             fileChannel = null;
             if (create) {
                 file.delete();
             }
         }
 
-        logger.exit(fileChannel);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit returning {0}", fileChannel);
+        }
         return fileChannel;
     }
 
@@ -192,22 +219,31 @@ public class PmemUtil {
      * @throws IOException if the store cannot be created.
      */
     public static ArrayStore arrayStoreFor(File file, int numberOfSlots, int slotDataCapacity) throws IOException {
-        logger.entry(file.getAbsolutePath(), numberOfSlots, slotDataCapacity);
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry with file={0}, numberOfSlots={1}, slotDataCapacity={2}",
+                    file.getAbsolutePath(), numberOfSlots, slotDataCapacity);
+        }
 
         if (!isPmemSupportedFor(file.getParentFile())) {
-            logger.exit(null);
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning null");
+            }
             return null;
         }
 
         try {
 
             ArrayStore arrayStore = (ArrayStore) arrayStoreConstructor.newInstance(file, numberOfSlots, slotDataCapacity);
-            logger.exit(arrayStore);
+            if(logger.isTraceEnabled()) {
+                logger.tracev("exit returning {0}", arrayStore);
+            }
             return arrayStore;
 
         } catch (Exception e) {
             IOException ioException = new IOException("Could not create array store", e);
-            logger.throwing(ioException);
+            if(logger.isTraceEnabled()) {
+                logger.tracev(ioException, "throwing {0}", ioException.toString());
+            }
             throw ioException;
         }
     }

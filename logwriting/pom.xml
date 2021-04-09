@@ -229,6 +229,13 @@
 
     <dependencies>
 
+        <!-- https://github.com/jboss-logging/jboss-logging -->
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+            <version>3.4.1.Final</version>
+        </dependency>
+
         <!-- https://www.slf4j.org/ -->
         <dependency>
             <groupId>org.slf4j</groupId>
