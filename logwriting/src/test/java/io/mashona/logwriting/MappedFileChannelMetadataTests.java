@@ -37,6 +37,9 @@ public class MappedFileChannelMetadataTests {
         if (file.exists()) {
             file.delete();
         }
+        if(!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
     }
 
     @AfterEach

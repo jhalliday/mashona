@@ -39,6 +39,9 @@ public class MappedFileChannelTests {
             file.delete();
             MappedFileChannel.getMetadataFile(file).delete();
         }
+        if(!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
 
         mappedFileChannel = new MappedFileChannel(file, 1024);
     }

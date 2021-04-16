@@ -205,8 +205,9 @@
                             <value></value>
                         </property>
                     </systemProperties>
-                    <!--  -Dorg.jboss.byteman.verbose -->
-                    <argLine>-Djdk.attach.allowAttachSelf</argLine>
+                    <!--  -Dorg.jboss.byteman.verbose can be added here for debugging. -->
+                    <!-- https://openjdk.java.net/jeps/396 - tests do dodgy things to monitor impl internal state -->
+                    <argLine>-Djdk.attach.allowAttachSelf --add-opens=java.base/java.nio=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
 
