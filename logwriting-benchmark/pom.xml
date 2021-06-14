@@ -49,15 +49,15 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>14</maven.compiler.source>
-        <maven.compiler.target>14</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
         <junit.version>5.6.2</junit.version>
-        <byteman.version>4.0.13</byteman.version>
-        <jmh.version>1.25.2</jmh.version>
+        <byteman.version>4.0.15</byteman.version>
+        <jmh.version>1.32</jmh.version>
 
-        <!-- You need a jdk14 or later to build. -->
-        <jdk.dir>/usr/local/jdk-15</jdk.dir>
+        <!-- Requires a jdk14 or later, preferably 17 or later, to build. -->
+        <jdk.dir>/usr/local/jdk-17ea26</jdk.dir>
         <maven.compiler.executable>${jdk.dir}/bin/javac</maven.compiler.executable>
     </properties>
 
@@ -165,7 +165,7 @@
         <dependency>
             <groupId>io.mashona</groupId>
             <artifactId>mashona-logwriting</artifactId>
-            <version>1.0.0.Beta1</version>
+            <version>1.0.0.Beta2-SNAPSHOT</version>
         </dependency>
 
         <!-- https://www.slf4j.org/ -->

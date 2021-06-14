@@ -79,25 +79,6 @@ public class PersistenceHandleTests {
         }
     }
 
-
-    @Test
-    public void testConfiguration() throws Exception {
-
-        PersistenceHandle.setParanoid(false);
-
-        new PersistenceHandle(mappedByteBuffer, 0, 0);
-
-        ByteBuffer dupl =  mappedByteBuffer.duplicate();
-
-        new PersistenceHandle(((MappedByteBuffer)dupl), 0, 0);
-
-        PersistenceHandle.setParanoid(true);
-
-        new PersistenceHandle(mappedByteBuffer, 0, 0);
-
-        assertThrows(IllegalArgumentException.class, () -> new PersistenceHandle(((MappedByteBuffer) dupl), 0, 0));
-    }
-
     @Test
     public void testWholeRangePersistence() {
 

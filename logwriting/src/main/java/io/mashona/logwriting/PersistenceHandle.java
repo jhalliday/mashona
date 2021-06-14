@@ -30,43 +30,6 @@ public class PersistenceHandle {
 
     private static final Logger logger = Logger.getLogger(PersistenceHandle.class);
 
-    private static Field fdField;
-
-    static {
-        try {
-            setParanoid( Boolean.getBoolean("persistent.paranoia") );
-        } catch (Exception e) {
-            logger.debug("Exception whilst configuring persistent handle validation. Validation will be disabled.", e);
-            fdField = null;
-        }
-    }
-
-    /**
-     * Configure validation of buffers passed to the constructor.
-     *
-     * <p>Caution: this method is NOT threadsafe with respect to instance constructor calls.</p>
-     *
-     * @param value true to enable validation, false to disable.
-     * @throws Exception if configuration enablement fails.
-     */
-
-    public static void setParanoid(boolean value) throws Exception {
-        if(logger.isTraceEnabled()) {
-            logger.tracev("entry with value={0}", value);
-        }
-
-        if(value) {
-            fdField = MappedByteBuffer.class.getDeclaredField("fd");
-            fdField.setAccessible(true);
-        } else {
-            fdField = null;
-        }
-
-        if(logger.isTraceEnabled()) {
-            logger.tracev("exit");
-        }
-    }
-
     private final MappedByteBuffer buffer;
     private final int offset;
     private final int length;
@@ -86,34 +49,12 @@ public class PersistenceHandle {
             logger.tracev("entry with buffer={0}, offset={1}, length={2}", buffer, offset, length);
         }
 
-        validateBuffer(buffer);
-
         this.buffer = buffer;
         this.offset = offset;
         this.length = length;
 
         if(logger.isTraceEnabled()) {
             logger.tracev("exit {0}", this);
-        }
-    }
-
-    private void validateBuffer(MappedByteBuffer buff) {
-
-        if (fdField != null ) {
-            boolean ok = true;
-            try {
-                ok = (fdField.get(buff) != null);
-            } catch (Exception e) {
-                logger.debug("Exception whilst trying to validate handle for {}. Continuing anyhow.", buff, e);
-            }
-
-            if(!ok) {
-                IllegalArgumentException exception = new IllegalArgumentException("Persistence would be ineffective on " + buff);
-                if(logger.isTraceEnabled()) {
-                    logger.tracev(exception, "throwing {0}", exception.toString());
-                }
-                throw exception;
-            }
         }
     }
 
