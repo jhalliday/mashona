@@ -847,7 +847,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
          */
         private void checkForReset() {
             if (epoch != expectedEpoch) {
-                ConcurrentModificationException concurrentModificationException = new ConcurrentModificationException();
+                ConcurrentModificationException concurrentModificationException = new ConcurrentModificationException("Log cleared after iterator creation");
                 if(logger.isTraceEnabled()) {
                     logger.tracev(concurrentModificationException, "throwing {0}",
                             concurrentModificationException.toString());

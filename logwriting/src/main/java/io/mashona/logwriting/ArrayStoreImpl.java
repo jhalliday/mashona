@@ -177,7 +177,7 @@ public class ArrayStoreImpl implements ArrayStore {
 
             int dataSize = src.remaining();
             if (dataSize > slotDataCapacity) {
-                IOException ioException = new IOException("data of size " + dataSize + " too big for slot of size " + slotDataCapacity);
+                IOException ioException = new IOException("Data of size " + dataSize + " too big for slot of size " + slotDataCapacity);
                 if(logger.isTraceEnabled()) {
                     logger.tracev(ioException, "throwing {0}", ioException.toString());
                 }

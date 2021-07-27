@@ -339,7 +339,7 @@ public class MappedFileChannel extends FileChannel {
     private int writeInternal(ByteBuffer src, int position) throws ClosedChannelException {
 
         if(metadata.isReadShared()) {
-            IllegalStateException illegalStateException = new IllegalStateException();
+            IllegalStateException illegalStateException = new IllegalStateException("ReadShared views can not be used for writes");
             if(logger.isTraceEnabled()) {
                 logger.tracev(illegalStateException, "throwing {0}", illegalStateException.toString());
             }
@@ -347,7 +347,8 @@ public class MappedFileChannel extends FileChannel {
         }
 
         if (position < metadata.getPersistenceIndex()) {
-            IllegalArgumentException illegalArgumentException = new IllegalArgumentException();
+            IllegalArgumentException illegalArgumentException = new IllegalArgumentException(
+                    "Write position "+position+" is before tail position "+metadata.getPersistenceIndex()+" - can not overwrite existing data");
             if(logger.isTraceEnabled()) {
                 logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException.toString());
             }
@@ -638,12 +639,14 @@ public class MappedFileChannel extends FileChannel {
 
     ////////////////
 
+    private static String NOT_IMPLEMENTED = "Method not implemented";
+
     /**
      * This method is not supported by this implementation.
      */
     @Override
     public long read(ByteBuffer[] byteBuffers, int offset, int length) throws IOException {
-        throw new IOException("method not implemented");
+        throw new IOException(NOT_IMPLEMENTED);
     }
 
     /**
@@ -651,7 +654,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public long write(ByteBuffer[] byteBuffers, int offset, int length) throws IOException {
-        throw new IOException("method not implemented");
+        throw new IOException(NOT_IMPLEMENTED);
     }
 
     /**
@@ -659,7 +662,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public FileChannel truncate(long size) throws IOException {
-        throw new IOException("method not implemented");
+        throw new IOException(NOT_IMPLEMENTED);
     }
 
     /**
@@ -667,7 +670,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
-        throw new IOException("method not implemented");
+        throw new IOException(NOT_IMPLEMENTED);
     }
 
     /**
@@ -675,7 +678,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
-        throw new IOException("method not implemented");
+        throw new IOException(NOT_IMPLEMENTED);
     }
 
     /**
@@ -683,7 +686,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public MappedByteBuffer map(MapMode mapMode, long position, long size) throws IOException {
-        throw new IOException("method not implemented");
+        throw new IOException(NOT_IMPLEMENTED);
     }
 
     /**
@@ -691,7 +694,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public FileLock lock(long position, long size, boolean shared) throws IOException {
-        throw new IOException("method not implemented");
+        throw new IOException(NOT_IMPLEMENTED);
     }
 
     /**
@@ -699,7 +702,7 @@ public class MappedFileChannel extends FileChannel {
      */
     @Override
     public FileLock tryLock(long position, long size, boolean shared) throws IOException {
-        throw new IOException("method not implemented");
+        throw new IOException(NOT_IMPLEMENTED);
     }
 
 }

@@ -66,7 +66,7 @@ public class PersistenceHandle {
 
         if (length > this.length) {
             IllegalArgumentException illegalArgumentException =
-                    new IllegalArgumentException("given length of " + length + " exceeds max of " + this.length);
+                    new IllegalArgumentException("Given length of " + length + " exceeds max of " + this.length);
             if(logger.isTraceEnabled()) {
                 logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException.toString());
             }
@@ -94,7 +94,7 @@ public class PersistenceHandle {
 
         if (length > this.length) {
             IllegalArgumentException illegalArgumentException =
-                    new IllegalArgumentException("given length of " + length + " exceeds max of " + this.length);
+                    new IllegalArgumentException("Given length of " + length + " exceeds max of " + this.length);
             if(logger.isTraceEnabled()) {
                 logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException);
             }
