@@ -32,7 +32,7 @@ public class PmemUtil {
 
     private static final Logger logger = Logger.getLogger(PmemUtil.class);
 
-    // most classes are built for jdk 14, whereas this class is built for 8,
+    // most classes are built for jdk 17, whereas this class is built for 8,
     // so we want to avoid hard linking or we'll get headaches.
     private static final Constructor mappedFileChannelConstructor;
     private static final Constructor mappedFileChannelMetadataConstructor;

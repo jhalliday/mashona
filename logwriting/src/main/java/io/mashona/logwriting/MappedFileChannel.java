@@ -240,12 +240,9 @@ public class MappedFileChannel extends FileChannel {
             length = Math.min(length, dst.remaining());
 
             if (length > 0) {
-                ByteBuffer srcSlice = dataBuffer.duplicate().position((int) position).limit(((int) position) + length).duplicate();
-                int begin = srcSlice.position();
-                // JDK-14: ByteBuffer srcSlice = dataBuffer.slice((int) position, length);
+                ByteBuffer srcSlice = dataBuffer.slice((int) position, length);
                 dst.put(srcSlice);
-                result = srcSlice.position() - begin;
-                // JDK-14: result = srcSlice.position();
+                result = srcSlice.position();
             } else {
                 result = length;
             }
@@ -357,10 +354,8 @@ public class MappedFileChannel extends FileChannel {
 
         int length = Math.min(dataBuffer.remaining(), src.remaining());
 
-        ByteBuffer srcSlice = src.duplicate().position(src.position()).limit(src.position() + length).duplicate();
-        // JDK-14: ByteBuffer srcSlice = src.slice(src.position(), length);
-        ByteBuffer dst = dataBuffer.duplicate().position(position).limit(position + length).duplicate();
-        // JDK-14: ByteBuffer dst = dataBuffer.slice(position, length);
+        ByteBuffer srcSlice = src.slice(src.position(), length);
+        ByteBuffer dst = dataBuffer.slice(position, length);
 
         dst.put(srcSlice);
         src.position(src.position() + length);

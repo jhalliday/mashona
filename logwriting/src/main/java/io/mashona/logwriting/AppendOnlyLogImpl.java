@@ -348,12 +348,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             buffer.putInt(checksum);
             int payloadStartPosition = buffer.position();
 
-            // https://bugs.openjdk.java.net/browse/JDK-8219014
-            payloadBuffer = buffer.slice();
-            payloadBuffer.limit(payloadLength);
-            payloadBuffer = payloadBuffer.slice();
-            // JDK-14: payloadBuffer = buffer.slice(buffer.position(), payloadLength);
-
+            payloadBuffer = buffer.slice(buffer.position(), payloadLength);
 
             // skip the space for the payload, we'll fill it in later
             buffer.position(buffer.position() + payloadLength);
@@ -375,10 +370,8 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             deferredRecordBytesLength = recordLength - recordBytesFittingInFirstCacheLine;
 
             if (!effectiveLinearOrdering && payloadCapacityInFistCacheLine != 0 && payloadCapacityInFistCacheLine < payloadLength) {
-                ByteBuffer immediateSlice = srcSlice.duplicate().position(0).limit(payloadCapacityInFistCacheLine).duplicate();
-                // JDK-14: ByteBuffer immediateSlice = srcSlice.slice(0, payloadCapacityInFistCacheLine);
-                deferredSlice = srcSlice.duplicate().position(payloadCapacityInFistCacheLine).limit(payloadLength).slice();
-                // JDK-14: deferredSlice = srcSlice.slice(payloadCapacityInFistCacheLine, payloadLength - payloadCapacityInFistCacheLine);
+                ByteBuffer immediateSlice = srcSlice.slice(0, payloadCapacityInFistCacheLine);
+                deferredSlice = srcSlice.slice(payloadCapacityInFistCacheLine, payloadLength - payloadCapacityInFistCacheLine);
                 payloadBuffer.put(immediateSlice);
                 persistenceHandle.persist(recordStartPosition, (ENTRY_HEADER_SIZE + payloadCapacityInFistCacheLine));
             } else {
@@ -420,15 +413,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             // in case we crash in inconsistent state whilst zeroing the rest
             buffer.clear();
 
-            buffer.position(MAGIC_OFFSET);
-            buffer.put(MAGIC_HEADER);
-            // JDK-14: buffer.put(MAGIC_OFFSET, MAGIC_HEADER);
-            buffer.position(PADDING_SIZE_OFFSET);
-            buffer.putInt(effectivePaddingSize);
-            // JDK-14: buffer.putInt(PADDING_SIZE_OFFSET, effectivePaddingSize);
-            buffer.position(LINEAR_ORDERING_OFFSET);
-            buffer.putInt(effectiveLinearOrdering ? 1 : 0);
-            // JDK-14: buffer.putInt(LINEAR_ORDERING_OFFSET, effectiveLinearOrdering ? 1 : 0);
+            buffer.put(MAGIC_OFFSET, MAGIC_HEADER);
+            buffer.putInt(PADDING_SIZE_OFFSET, effectivePaddingSize);
+            buffer.putInt(LINEAR_ORDERING_OFFSET, effectiveLinearOrdering ? 1 : 0);
 
             persistenceHandle.persist(MAGIC_OFFSET, LOG_HEADER_BYTES);
 
@@ -449,15 +436,9 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
 
             buffer.clear();
 
-            buffer.position(MAGIC_OFFSET);
-            buffer.put(MAGIC_HEADER);
-            // JDK-14: buffer.put(MAGIC_OFFSET, MAGIC_HEADER);
-            buffer.position(PADDING_SIZE_OFFSET);
-            buffer.putInt(effectivePaddingSize);
-            // JDK-14: buffer.putInt(PADDING_SIZE_OFFSET, effectivePaddingSize);
-            buffer.position(LINEAR_ORDERING_OFFSET);
-            buffer.putInt(effectiveLinearOrdering ? 1 : 0);
-            // JDK-14: buffer.putInt(LINEAR_ORDERING_OFFSET, effectiveLinearOrdering ? 1 : 0);
+            buffer.put(MAGIC_OFFSET, MAGIC_HEADER);
+            buffer.putInt(PADDING_SIZE_OFFSET, effectivePaddingSize);
+            buffer.putInt(LINEAR_ORDERING_OFFSET, effectiveLinearOrdering ? 1 : 0);
 
             persistenceHandle.persist(MAGIC_OFFSET, LOG_HEADER_BYTES);
 

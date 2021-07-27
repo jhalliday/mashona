@@ -185,10 +185,8 @@ public class ArrayStoreImpl implements ArrayStore {
             }
             int position = slotIndex * slotSize;
 
-            ByteBuffer srcSlice = src.duplicate().position(src.position()).limit(src.position() + dataSize).duplicate();
-            // JDK-14: ByteBuffer srcSlice = src.slice(src.position(), length);
-            ByteBuffer dst = dataBuffer.duplicate().position(position).limit(position + slotSize).duplicate();
-            // JDK-14: ByteBuffer dst = dataBuffer.slice(position, length);
+            ByteBuffer srcSlice = src.slice(src.position(), dataSize);
+            ByteBuffer dst = dataBuffer.slice(position, slotSize);
 
             CRC32C crc32c = new CRC32C();
             crc32c.update(srcSlice);
