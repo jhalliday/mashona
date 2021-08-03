@@ -19,7 +19,7 @@
 
     <groupId>io.mashona</groupId>
     <artifactId>mashona-logwriting-benchmark</artifactId>
-    <version>1.0.0.Beta2</version>
+    <version>1.0.0.Beta3-SNAPSHOT</version>
 
     <name>Mashona Log Writing Performance tests</name>
     <description>Persistent Memory support for Java, binary logging module performance suite</description>
@@ -165,7 +165,7 @@
         <dependency>
             <groupId>io.mashona</groupId>
             <artifactId>mashona-logwriting</artifactId>
-            <version>1.0.0.Beta2</version>
+            <version>1.0.0.Beta3-SNAPSHOT</version>
         </dependency>
 
         <!-- https://www.slf4j.org/ -->
