@@ -19,7 +19,7 @@
 
     <groupId>io.mashona</groupId>
     <artifactId>mashona-logwriting</artifactId>
-    <version>1.0.0.Beta2-SNAPSHOT</version>
+    <version>1.0.0.Beta2</version>
 
     <name>Mashona Log Writing</name>
     <description>Persistent Memory support for Java, binary logging module.</description>
