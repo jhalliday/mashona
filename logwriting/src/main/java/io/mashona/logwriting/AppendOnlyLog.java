@@ -49,6 +49,22 @@ public interface AppendOnlyLog extends Iterable<ByteBuffer> {
     boolean isRequestedLinearOrdering();
 
     /**
+     * Reports the auto-checkpointing mode.
+     *
+     * @return true if writes should always include an implicit checkpoint update, false otherwise.
+     */
+    boolean isAlwaysCheckpoint();
+
+    /**
+     * Reports the read/recovery mode.
+     *
+     * @return true if the persistent checkpoint (limit) in the file should be used when reading back the log,
+     *          false if the entries should be walked instead.
+     */
+    boolean isAuthoritativeCheckpointOnReads();
+
+
+    /**
      * Persist the current position, allowing faster reopening of the log.
      * <p>
      * This may be called to signal a clean shutdown, though it is
@@ -167,6 +183,11 @@ public interface AppendOnlyLog extends Iterable<ByteBuffer> {
      * This operation overwrites the entire log capacity, so may be slow on large logs.
      */
     void clear();
+
+    /**
+     * Resets the checkpoint to the start of the file and persists its value.
+     */
+    void reset();
 
     /**
      * Returns the number of unused bytes available in the log.

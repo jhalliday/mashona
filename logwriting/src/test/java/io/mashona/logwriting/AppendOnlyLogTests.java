@@ -20,8 +20,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import sun.misc.Unsafe;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -32,6 +30,8 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @WithBytemanFrom(source = ExecutionTracer.class)
 class AppendOnlyLogTests {
@@ -303,6 +303,118 @@ class AppendOnlyLogTests {
         assertFalse(paddedAppendOnlyLog.canAccept(paddedAppendOnlyLog.remaining() - 10));
     }
 
+    @Test
+    public void testAutocheckpointing() {
+        final int CHECKPOINT_OFFSET = 12;
+
+        final AppendOnlyLog appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024, new AppendOnlyLogImplConfig(false, true, true, false));
+
+        int checkpointValue = mappedByteBuffer.getInt(CHECKPOINT_OFFSET);
+        assertEquals(0, checkpointValue);
+
+        byte[] data = new byte[]{'1'};
+        appendOnlyLog.put(data);
+
+        checkpointValue = mappedByteBuffer.getInt(CHECKPOINT_OFFSET);
+        assertNotEquals(0, checkpointValue);
+    }
+
+    @Test
+    public void testReadingAfterResetWhenNonAuthoritative() {
+        final AppendOnlyLogWithLocation appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024,
+                new AppendOnlyLogImplConfig(false, true, true, false));
+
+        assertTrue(appendOnlyLog.isAlwaysCheckpoint());
+        assertFalse(appendOnlyLog.isAuthoritativeCheckpointOnReads());
+
+        byte[] data = new byte[]{'1'};
+        int location = appendOnlyLog.putWithLocation(data);
+
+        Iterator<ByteBuffer> iter;
+        iter = appendOnlyLog.iterator();
+        iter.next();
+        assertFalse(iter.hasNext());
+
+        ByteBuffer buffer = appendOnlyLog.readRecordAt(location);
+        assertEquals(data[0], buffer.get());
+        assertEquals(0, buffer.remaining());
+
+        appendOnlyLog.reset();
+
+        iter = appendOnlyLog.iterator();
+        iter.next();
+        assertFalse(iter.hasNext());
+
+        buffer = appendOnlyLog.readRecordAt(location);
+        assertEquals(data[0], buffer.get());
+        assertEquals(0, buffer.remaining());
+    }
+
+    @Test
+    public void testReadingAfterResetWhenAuthoritative() {
+        final AppendOnlyLogWithLocation appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024,
+                new AppendOnlyLogImplConfig(false, true, true, true));
+        byte[] data = new byte[]{'1'};
+        int location = appendOnlyLog.putWithLocation(data);
+
+        assertTrue(appendOnlyLog.isAlwaysCheckpoint());
+        assertTrue(appendOnlyLog.isAuthoritativeCheckpointOnReads());
+
+        Iterator<ByteBuffer> iter;
+        iter = appendOnlyLog.iterator();
+        iter.next();
+        assertFalse(iter.hasNext());
+
+        ByteBuffer buffer = appendOnlyLog.readRecordAt(location);
+        assertEquals(data[0], buffer.get());
+        assertEquals(0, buffer.remaining());
+
+        appendOnlyLog.reset();
+
+        iter = appendOnlyLog.iterator();
+        assertFalse(iter.hasNext());
+
+        assertThrows(IllegalArgumentException.class, () -> appendOnlyLog.readRecordAt(location));
+    }
+
+    @Test
+    public void isAuthoritativeCheckpointOnReadsRecovery() {
+        final AppendOnlyLog appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024, new AppendOnlyLogImplConfig(false, true, false, false));
+        // write two records, but checkpoint only the first
+        byte[] dataOne = new byte[]{'1'};
+        appendOnlyLog.put(dataOne);
+        appendOnlyLog.checkpoint();
+        byte[] dataTwo = new byte[]{'2'};
+        appendOnlyLog.put(dataTwo);
+
+        Iterator<ByteBuffer> iter;
+
+        // use iterator recovery, should find both records
+        final AppendOnlyLog iterLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024, new AppendOnlyLogImplConfig(false, true, false, false));
+        iter = iterLog.iterator();
+        iter.next();
+        assertTrue(iter.hasNext());
+
+        // use checkpoint recovery, should find only the first
+        final AppendOnlyLog checkpointLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024, new AppendOnlyLogImplConfig(false, true, false, true));
+        iter = checkpointLog.iterator();
+        iter.next();
+        assertFalse(iter.hasNext());
+    }
+
+    @Test
+    public void testRecoveryWithAuthoritativeCheckpoint() {
+        AppendOnlyLog appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024,
+                new AppendOnlyLogImplConfig(false, true, false, true));
+        byte[] data = new byte[]{'1'};
+        appendOnlyLog.put(data);
+
+        appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024,
+                new AppendOnlyLogImplConfig(false, true, false, true));
+
+        assertFalse(appendOnlyLog.iterator().hasNext());
+    }
+
 
     @Test
     public void testRecovery() {
@@ -382,7 +494,7 @@ class AppendOnlyLogTests {
 
         AppendOnlyLog appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024, padding, linear);
 
-        if(padding) {
+        if (padding) {
             // in padded mode, the log will try to flush the unused padding range. The hw will elide that, since
             // it knows the lines are clean. But our test harness will complain unless we suppress it...
             ExecutionTracer.INSTANCE.allowFlushingOfCleanLines = true;
@@ -401,19 +513,19 @@ class AppendOnlyLogTests {
                     appendOnlyLog.put(data);
                     break;
                 case "try_full_array":
-                    assertTrue( appendOnlyLog.tryPut(data) );
+                    assertTrue(appendOnlyLog.tryPut(data));
                     break;
                 case "slice_array":
                     appendOnlyLog.put(data, 0, data.length);
                     break;
                 case "try_slice_array":
-                    assertTrue( appendOnlyLog.tryPut(data, 0, data.length) );
+                    assertTrue(appendOnlyLog.tryPut(data, 0, data.length));
                     break;
                 case "ByteBuffer":
                     appendOnlyLog.put(ByteBuffer.wrap(data));
                     break;
                 case "try_ByteBuffer":
-                    assertTrue( appendOnlyLog.tryPut(ByteBuffer.wrap(data)) );
+                    assertTrue(appendOnlyLog.tryPut(ByteBuffer.wrap(data)));
                     break;
             }
 
@@ -482,7 +594,7 @@ class AppendOnlyLogTests {
 
         AppendOnlyLogWithLocation appendOnlyLog = new AppendOnlyLogImpl(mappedByteBuffer, 0, 1024, padding, linear);
 
-        if(padding) {
+        if (padding) {
             // in padded mode, the log will try to flush the unused padding range. The hw will elide that, since
             // it knows the lines are clean. But our test harness will complain unless we suppress it...
             ExecutionTracer.INSTANCE.allowFlushingOfCleanLines = true;

@@ -18,7 +18,6 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -69,39 +68,62 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
     private boolean effectiveLinearOrdering;
     private final boolean requestedLinearOrdering;
 
+    private final boolean alwaysCheckpoint;
+    private final boolean authoritativeCheckpointOnReads;
+
     // The number of times this log has been cleared, used to keep Iterators in sync.
     private int epoch = 0;
 
     /**
      * Establishes an append-only log structure over a given range of mapped memory.
      *
-     * @param byteBuffer   The mapped memory to use.  It MUST NOT be a slice or duplicate.
-     * @param offset       The offset within the allocatedMemory, from which to start the log structure. This MUST be cache line aligned and SHOULD be 256-byte block aligned.
-     * @param length       The size of the region within the buffer which is available for the log.
-     * @param blockPadding true if extra space should be used to increase performance, or false for a slower but more compact record format.
-     * @param linearOrdering true is strict serial ordering of writes is required, false for more relaxed ordering guarantees.
+     * @param byteBuffer     The mapped memory to use.  It MUST NOT be a slice or duplicate.
+     * @param offset         The offset within the allocatedMemory, from which to start the log structure. This MUST be cache line aligned and SHOULD be 256-byte block aligned.
+     * @param length         The size of the region within the buffer which is available for the log.
+     * @param blockPadding   true if extra space should be used to increase performance, or false for a slower but more compact record format.
+     * @param linearOrdering true if strict serial ordering of writes is required, false for more relaxed ordering guarantees.
+     * @deprecated prefer passing an AppendOnlyLogConfig to the constructor.
      */
+    @Deprecated(since = "1.1")
     public AppendOnlyLogImpl(MappedByteBuffer byteBuffer, int offset, int length, boolean blockPadding, boolean linearOrdering) {
+        this(byteBuffer, offset, length, new AppendOnlyLogImplConfig(blockPadding, linearOrdering, false, false));
+    }
+
+    /**
+     * Establishes an append-only log structure over a given range of mapped memory.
+     *
+     * @param byteBuffer The mapped memory to use.  It MUST NOT be a slice or duplicate.
+     * @param offset     The offset within the allocatedMemory, from which to start the log structure. This MUST be cache line aligned and SHOULD be 256-byte block aligned.
+     * @param length     The size of the region within the buffer which is available for the log.
+     * @param config     Configuration parameter values for behaviour modifications.
+     */
+    public AppendOnlyLogImpl(MappedByteBuffer byteBuffer, int offset, int length, AppendOnlyLogImplConfig config) {
         if(logger.isTraceEnabled()) {
-            logger.tracev("entry with byteBuffer={0}, offset={1}, length={2}, blockPadding={3}",
-                    byteBuffer, offset, length, blockPadding);
+            logger.tracev("entry with byteBuffer={0}, offset={1}, length={2}, config={3}",
+                    byteBuffer, offset, length, config);
         }
 
         lock.lock();
         try {
 
-            if (blockPadding) {
+            if(config.isBlockPadding()) {
                 requestedPaddingSize = BLOCK_SIZE; // Optane internal block alignment, for performance.
             } else {
                 requestedPaddingSize = INT_SIZE; // int alignment, the minimum for persistence safety.
             }
 
-            requestedLinearOrdering = linearOrdering;
+            requestedLinearOrdering = config.isLinearOrdering();
 
             // force MUST be called on the original buffer, NOT a duplicate or slice,
             // so we need to keep a handle on it. However, we don't want to inadvertently
             // rely on or change its state, so we wrap it in a restrictive API.
             persistenceHandle = new PersistenceHandle(byteBuffer, offset, length);
+
+            this.alwaysCheckpoint = config.isAlwaysCheckpoint();
+            if(alwaysCheckpoint) {
+                effectiveLinearOrdering = requestedLinearOrdering;
+            }
+            this.authoritativeCheckpointOnReads = config.isAuthoritativeCheckpointOnReads();
 
             // we slice the origin buffer, so that we have a zero origin to make math easier
             // and our own position/limit/capacity so we can reason about concurrency better
@@ -112,7 +134,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
 
             byte[] header = new byte[MAGIC_HEADER.length];
             buffer.get(header);
-            if (Arrays.equals(header, MAGIC_HEADER)) {
+            if(Arrays.equals(header, MAGIC_HEADER)) {
                 // pre-existing data in known format.
                 // persisted config takes priority, or we'll get inconsistencies
                 effectivePaddingSize = buffer.getInt(PADDING_SIZE_OFFSET);
@@ -125,7 +147,6 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 // we don't know what's in the provided buffer, so zero it out for safety
                 clear();
             }
-
 
         } finally {
             lock.unlock();
@@ -166,6 +187,25 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
     @Override
     public boolean isRequestedLinearOrdering() {
         return requestedLinearOrdering;
+    }
+
+    /**
+     * Reports the auto-checkpointing mode.
+     *
+     * @return true if writes should always include an implicit checkpoint update, false otherwise.
+     */
+    public boolean isAlwaysCheckpoint() {
+        return alwaysCheckpoint;
+    }
+
+    /**
+     * Reports the read/recovery mode.
+     *
+     * @return true if the persistent checkpoint (limit) in the file should be used when reading back the log,
+     * false if the entries should be walked instead.
+     */
+    public boolean isAuthoritativeCheckpointOnReads() {
+        return authoritativeCheckpointOnReads;
     }
 
     /**
@@ -272,7 +312,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
         }
 
         int location = tryPutWithLocation(src);
-        if (location == ERROR_LOCATION) {
+        if(location == ERROR_LOCATION) {
             BufferOverflowException bufferOverflowException = new BufferOverflowException();
             if(logger.isTraceEnabled()) {
                 logger.tracev(bufferOverflowException, "throwing {0}", bufferOverflowException.toString());
@@ -307,7 +347,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
         ByteBuffer srcSlice = src.slice();
         int payloadLength = srcSlice.remaining();
 
-        if (payloadLength == 0) {
+        if(payloadLength == 0) {
             if(logger.isTraceEnabled()) {
                 logger.tracev("exit returning {0}", ERROR_LOCATION);
             }
@@ -335,7 +375,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
         lock.lock();
         try {
 
-            if (!canAcceptInternal(payloadLength)) {
+            if(!canAcceptInternal(payloadLength)) {
                 if(logger.isTraceEnabled()) {
                     logger.tracev("exit returning {0}", ERROR_LOCATION);
                 }
@@ -369,7 +409,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             recordBytesFittingInFirstCacheLine = ENTRY_HEADER_SIZE + payloadCapacityInFistCacheLine;
             deferredRecordBytesLength = recordLength - recordBytesFittingInFirstCacheLine;
 
-            if (!effectiveLinearOrdering && payloadCapacityInFistCacheLine != 0 && payloadCapacityInFistCacheLine < payloadLength) {
+            if(!effectiveLinearOrdering && payloadCapacityInFistCacheLine != 0 && payloadCapacityInFistCacheLine < payloadLength) {
                 ByteBuffer immediateSlice = srcSlice.slice(0, payloadCapacityInFistCacheLine);
                 deferredSlice = srcSlice.slice(payloadCapacityInFistCacheLine, payloadLength - payloadCapacityInFistCacheLine);
                 payloadBuffer.put(immediateSlice);
@@ -382,11 +422,15 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             // we've been operating on a slice, but need to reflect the read in the original
             src.position(src.position() + payloadLength);
 
+            if(alwaysCheckpoint) {
+                checkpoint();
+            }
+
         } finally {
             lock.unlock();
         }
 
-        if (deferredSlice != null) {
+        if(deferredSlice != null) {
             payloadBuffer.put(deferredSlice);
             persistenceHandle.persist(recordStartPosition + recordBytesFittingInFirstCacheLine, deferredRecordBytesLength);
         }
@@ -422,7 +466,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             // sun.misc.Unsafe.setMemory may be faster, but would require linking against jdk.unsupported module
             buffer.clear();
             byte[] zeros = new byte[1024 * 1024];
-            while (buffer.remaining() > 0) {
+            while(buffer.remaining() > 0) {
                 buffer.put(zeros, 0, buffer.remaining() > zeros.length ? zeros.length : buffer.remaining());
             }
 
@@ -445,6 +489,30 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             buffer.position(FIRST_RECORD_OFFSET);
             epoch++;
 
+        } finally {
+            lock.unlock();
+        }
+
+        if(logger.isTraceEnabled()) {
+            logger.tracev("exit");
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reset() {
+        if(logger.isTraceEnabled()) {
+            logger.tracev("entry for {0}", this);
+        }
+
+        lock.lock();
+
+        try {
+            buffer.position(FIRST_RECORD_OFFSET);
+            epoch++;
+            checkpoint();
         } finally {
             lock.unlock();
         }
@@ -507,7 +575,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
 
         int recordLength = length + PER_ENTRY_OVERHEAD;
         int realignment = (length % effectivePaddingSize);
-        if (realignment != 0) {
+        if(realignment != 0) {
             recordLength += (effectivePaddingSize - realignment); // pad to int alignment
         }
 
@@ -517,7 +585,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
 
     private void padRecord() {
         int x = buffer.position() % effectivePaddingSize;
-        if (x != 0) {
+        if(x != 0) {
             buffer.position(buffer.position() + (effectivePaddingSize - x));
         }
     }
@@ -533,13 +601,19 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
 
         int checkpoint = buffer.getInt(CHECKPOINT_OFFSET);
 
-        Itr iter = new Itr(checkpoint != 0 ? checkpoint : FIRST_RECORD_OFFSET, false);
+        if(authoritativeCheckpointOnReads) {
 
-        while (iter.hasNext()) {
-            iter.next();
+            buffer.position(checkpoint);
+
+        } else {
+            Itr iter = new Itr(checkpoint != 0 ? checkpoint : FIRST_RECORD_OFFSET, false);
+
+            while(iter.hasNext()) {
+                iter.next();
+            }
+
+            buffer.position(iter.iterBuffer.position());
         }
-
-        buffer.position(iter.iterBuffer.position());
 
         if(logger.isTraceEnabled()) {
             logger.tracev("exit");
@@ -555,13 +629,22 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             logger.tracev("entry for {0} with location={1}", this, location);
         }
 
+        if(authoritativeCheckpointOnReads && location >= buffer.getInt(CHECKPOINT_OFFSET)) {
+            IllegalArgumentException illegalArgumentException = new IllegalArgumentException
+                    ("record location " + location + " is beyond checkpoint " + buffer.getInt(CHECKPOINT_OFFSET));
+            if(logger.isTraceEnabled()) {
+                logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException.toString());
+            }
+            throw illegalArgumentException;
+        }
+
         CRC32C crc32c = new CRC32C();
 
         ByteBuffer recordBuffer = buffer.duplicate();
         recordBuffer.position(location);
 
-        if (recordBuffer.remaining() < 4) {
-            IllegalArgumentException illegalArgumentException = new IllegalArgumentException("invalid record location "+location);
+        if(recordBuffer.remaining() < 4) {
+            IllegalArgumentException illegalArgumentException = new IllegalArgumentException("invalid record location " + location);
             if(logger.isTraceEnabled()) {
                 logger.tracev(illegalArgumentException, "throwing {0}", illegalArgumentException.toString());
             }
@@ -681,7 +764,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 // we don't cache failure, so repeatedly calling hasNext after it returns false is expensive,
                 // but should also be rare
 
-                if (lookahead == null) {
+                if(lookahead == null) {
                     lookahead();
                 }
 
@@ -720,7 +803,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
 
                 checkForReset();
 
-                if (!hasNext()) {
+                if(!hasNext()) {
                     NoSuchElementException noSuchElementException = new NoSuchElementException();
                     if(logger.isTraceEnabled()) {
                         logger.tracev(noSuchElementException, "throwing {0}", noSuchElementException.toString());
@@ -734,7 +817,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                 lookahead = null;
                 lookaheadPos = 0;
 
-                if (returnCopies) {
+                if(returnCopies) {
                     ByteBuffer view = result;
                     result = ByteBuffer.allocate(view.remaining());
                     result.put(view);
@@ -763,11 +846,15 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
             int originalPosition = iterBuffer.position();
             ByteBuffer byteBuffer = null;
 
+            if(authoritativeCheckpointOnReads && originalPosition >= buffer.getInt(CHECKPOINT_OFFSET)) {
+                return;
+            }
+
             try {
 
                 do {
 
-                    if (iterBuffer.remaining() < 4) {
+                    if(iterBuffer.remaining() < 4) {
                         if(logger.isTraceEnabled()) {
                             logger.tracev("exit");
                         }
@@ -775,7 +862,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                     }
 
                     int length = iterBuffer.getInt();
-                    if (length == 0) {
+                    if(length == 0) {
                         if(logger.isTraceEnabled()) {
                             logger.tracev("exit");
                         }
@@ -792,7 +879,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                     byteBuffer.rewind();
 
                     int realignment = (iterBuffer.position() % effectivePaddingSize);
-                    if (realignment != 0) {
+                    if(realignment != 0) {
                         iterBuffer.position(iterBuffer.position() + (effectivePaddingSize - realignment));
                     }
 
@@ -800,7 +887,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
                         break; // found a valid entry, so we're done
                     }
 
-                    if (isEffectiveLinearOrdering()) {
+                    if(isEffectiveLinearOrdering()) {
                         if(logger.isTraceEnabled()) {
                             logger.tracev("exit");
                         }
@@ -827,7 +914,7 @@ public class AppendOnlyLogImpl implements AppendOnlyLogWithLocation {
          * Throw an Exception if the log has been cleared since the iterator was created
          */
         private void checkForReset() {
-            if (epoch != expectedEpoch) {
+            if(epoch != expectedEpoch) {
                 ConcurrentModificationException concurrentModificationException = new ConcurrentModificationException("Log cleared after iterator creation");
                 if(logger.isTraceEnabled()) {
                     logger.tracev(concurrentModificationException, "throwing {0}",
